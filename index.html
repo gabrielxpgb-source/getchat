@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Messenger Redesign</title>
+    
+    <!-- Tailwind CDN & Fontes -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#717783",
+                        "primary-container": "#1976d2",
+                        "secondary-container": "#91f78e",
+                        "tertiary-fixed": "#ffe170",
+                        "on-tertiary-container": "#4c3e00",
+                        "on-primary-container": "#fffdff",
+                        "surface": "#f6faff",
+                        "background": "#f6faff",
+                        "primary": "#005dac",
+                        "secondary": "#006e1c",
+                        "on-surface": "#171c20",
+                        "on-surface-variant": "#414752",
+                        "error": "#ba1a1a"
+                    },
+                    "fontFamily": {
+                        "display": ["Be Vietnam Pro"],
+                        "body-sm": ["Be Vietnam Pro"],
+                        "chat-text": ["Be Vietnam Pro"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "headline-sm": ["Be Vietnam Pro"],
+                        "label-bold": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #a5c8ff 0%, #d4e3ff 50%, #f6faff 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .glass-window {
+            background: rgba(255, 255, 255, 0.55);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255,255,255,0.3);
+        }
+
+        .gel-button {
+            background: linear-gradient(to bottom, #42a5f5, #1976d2);
+            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .gel-button::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 100%);
+        }
+
+        .gel-button:active {
+            background: linear-gradient(to bottom, #1565c0, #1976d2);
+            transform: scale(0.98);
+        }
+
+        .message-bubble-incoming {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.8);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .message-bubble-outgoing {
+            background: linear-gradient(135deg, rgba(227, 242, 253, 0.85) 0%, rgba(187, 222, 250, 0.85) 100%);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 2px 6px rgba(0,93,172,0.05), inset 0 1px 1px rgba(255,255,255,0.8);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .message-bubble-incoming:hover, .message-bubble-outgoing:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 93, 172, 0.12);
+        }
+
+        .nudge-alert {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(113, 119, 131, 0.3);
+            border-radius: 10px;
+        }
+
+        .glossy-header {
+            background: linear-gradient(180deg, #1e88e5 0%, #1565c0 100%);
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .glossy-header::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 48%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 80%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            border-radius: 0 0 50% 50% / 0 0 10% 10%;
+        }
+        
+        .frosted-sidebar {
+            background: rgba(240, 244, 250, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        .glossy-pill {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+<body class="p-4">
+
+<!-- 1. TELA DE LOGIN -->
+<div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
+    <div class="glass-window p-8 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+        <div class="flex items-center justify-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-primary text-4xl">forum</span>
+            <h2 class="text-2xl font-bold text-primary">Entrar no Chat</h2>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">Seu Apelido/Nome</label>
+            <input id="login-username" type="text" placeholder="Ex: kiki" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome do Grupo / Sala</label>
+            <input id="login-group" type="text" placeholder="Ex: geral" value="geral" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+        </div>
+
+        <button onclick="handleLogin()" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
+            <span>Conectar</span>
+            <span class="material-symbols-outlined text-sm">login</span>
+        </button>
+    </div>
+</div>
+
+<!-- MODAL DE PERFIL / ALTERAR FOTO DO COMPUTADOR -->
+<div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md hidden">
+    <div class="glass-window p-6 rounded-2xl w-full max-w-sm shadow-2xl flex flex-col gap-4">
+        <div class="flex justify-between items-center border-b border-white/40 pb-2">
+            <h3 class="font-bold text-primary text-base">Editar Foto de Perfil</h3>
+            <button onclick="toggleProfileModal()" class="text-outline hover:text-red-500">
+                <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+        </div>
+
+        <div class="flex flex-col items-center gap-3">
+            <img id="preview-avatar-img" class="w-20 h-20 rounded-full object-cover border-2 border-white shadow" src="" alt="Avatar"/>
+            
+            <label class="gel-button px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow">
+                <span class="material-symbols-outlined text-sm">upload</span>
+                <span>Escolher foto do dispositivo</span>
+                <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)"/>
+            </label>
+
+            <button onclick="resetAvatarToDefault()" class="text-xs text-red-600 hover:underline mt-1 font-semibold">
+                Remover foto (usar avatar neutro)
+            </button>
+        </div>
+
+        <button onclick="toggleProfileModal()" class="w-full py-2 bg-white/80 hover:bg-white text-on-surface text-xs font-bold rounded-xl border border-white shadow-sm mt-2">
+            Concluído
+        </button>
+    </div>
+</div>
+
+<!-- 2. JANELA PRINCIPAL DO CHAT -->
+<div id="app-window" class="glass-window w-full max-w-[1024px] h-[720px] rounded-xl flex flex-col overflow-hidden hidden">
+    
+    <!-- Header Superior -->
+    <header class="glossy-header flex justify-between items-center w-full px-6 py-2 shadow-sm text-white z-10">
+        <div class="flex items-center gap-2 relative z-20">
+            <span class="material-symbols-outlined drop-shadow-md">forum</span>
+            <h1 class="text-lg font-bold drop-shadow-md">Sala: <span id="header-group-name">geral</span></h1>
+        </div>
+        
+        <div class="flex items-center gap-4 relative z-20">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="toggleProfileModal()" title="Clique para alterar foto">
+                <div class="flex flex-col items-end">
+                    <span id="header-user-name" class="text-xs font-bold drop-shadow-sm">@usuario</span>
+                    <span class="text-[10px] opacity-90 drop-shadow-sm">(Editar Foto)</span>
+                </div>
+                <div class="w-9 h-9 rounded-full border-2 border-white/80 overflow-hidden shadow-sm bg-white/30 hover:scale-105 transition-transform">
+                    <img id="header-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar"/>
+                </div>
+            </div>
+            
+            <button onclick="handleLogoff()" title="Sair da Conta" class="flex items-center gap-1 px-3 py-1 bg-red-500/80 hover:bg-red-600/90 text-white text-xs font-bold rounded-lg backdrop-blur-sm transition-all shadow-sm">
+                <span class="material-symbols-outlined text-sm">logout</span>
+                <span>Sair</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Esquerda -->
+        <aside class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
+            <!-- Perfil Local -->
+            <div class="p-4 flex items-center gap-3 border-b border-white/30 cursor-pointer hover:bg-white/20 transition-colors" onclick="toggleProfileModal()">
+                <div class="relative">
+                    <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/70 shadow-sm bg-white/40">
+                        <img id="sidebar-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar"/>
+                    </div>
+                    <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                <div class="flex flex-col overflow-hidden">
+                    <span id="sidebar-user-name" class="text-sm font-bold text-on-surface truncate">@usuario</span>
+                    <span class="text-xs text-primary font-semibold truncate hover:underline">Alterar Foto</span>
+                </div>
+            </div>
+
+            <!-- Abas -->
+            <div class="flex px-2 pt-2 gap-1">
+                <button class="flex-1 py-1 text-center text-xs font-bold bg-white/60 text-primary-container rounded-t-lg border-t border-x border-white/40">Contatos</button>
+                <button class="flex-1 py-1 text-center text-xs font-bold text-on-surface-variant opacity-70 hover:opacity-100">Recentes</button>
+            </div>
+
+            <!-- Pesquisa -->
+            <div class="px-2 py-2">
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                    <input class="w-full pl-8 pr-2 py-1 text-xs rounded-lg bg-white/50 border border-white/60 focus:outline-none backdrop-blur-sm" placeholder="Buscar..." type="text"/>
+                </div>
+            </div>
+
+            <!-- Lista de Conversas -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
+                <div class="mb-4">
+                    <h3 class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-outline/80">Sala Atual</h3>
+                    <div class="mt-1 flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-white/40 font-bold text-primary shadow-sm">
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
+                            <span class="material-symbols-outlined text-sm">groups</span>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <span id="sidebar-group-name" class="text-xs truncate">Sala: geral</span>
+                            <span class="text-[10px] opacity-70 font-normal">Grupo Público</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botão Logoff na Sidebar -->
+            <div class="p-2 border-t border-white/30">
+                <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors border border-red-200">
+                    <span class="material-symbols-outlined text-sm">logout</span>
+                    <span>Encerrar Sessão</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Área Central das Mensagens -->
+        <main class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
+            <div class="bg-white/60 px-4 py-2 flex items-center gap-2 border-b border-white/40 shadow-sm">
+                <span class="material-symbols-outlined text-amber-600 text-sm">campaign</span>
+                <h2 class="text-xs font-bold text-on-surface">Histórico de Mensagens</h2>
+            </div>
+
+            <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" id="chat-messages">
+                <!-- Mensagens inseridas via JS -->
+            </div>
+
+            <!-- Popover de Emojis -->
+            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
+                <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
+                <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
+                <button onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1 rounded text-lg">😍</button>
+                <button onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1 rounded text-lg">😎</button>
+                <button onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1 rounded text-lg">👍</button>
+                <button onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1 rounded text-lg">🔥</button>
+                <button onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1 rounded text-lg">🎉</button>
+                <button onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1 rounded text-lg">❤️</button>
+                <button onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1 rounded text-lg">🙏</button>
+                <button onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1 rounded text-lg">🤔</button>
+                <button onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1 rounded text-lg">👋</button>
+                <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
+            </div>
+
+            <!-- Barra de Digitação e Ações -->
+            <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
+                <div class="flex gap-2 mb-2">
+                    <button onclick="sendNudge()" class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm">
+                        <span class="material-symbols-outlined text-sm text-amber-600">notifications</span>
+                        <span>Chamar Atenção</span>
+                    </button>
+                    
+                    <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">attach_file</span>
+                        <span>Anexo</span>
+                        <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)"/>
+                    </label>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 relative">
+                        <input id="message-input" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm" placeholder="Digite uma mensagem..." type="text"/>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/50">
+                            <span onclick="toggleEmojiPopover()" class="material-symbols-outlined cursor-pointer hover:text-primary select-none">sentiment_satisfied</span>
+                        </div>
+                    </div>
+                    <button onclick="sendMessage()" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md">
+                        <span class="relative z-10">Enviar</span>
+                        <span class="material-symbols-outlined text-sm relative z-10">send</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script>
+    // =======================================================
+    // 1. ÁUDIO COM FALLBACK
+    // =======================================================
+    const audioNudge = new Audio('nudge.mp3'); 
+    const audioMessage = new Audio('mensagem.mp3');
+
+    function playSound(audioObject) {
+        audioObject.currentTime = 0;
+        audioObject.play().catch(() => {
+            playBeepSound();
+        });
+    }
+
+    function playBeepSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = 587.33; 
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.15);
+        } catch(e){}
+    }
+
+    // =======================================================
+    // 2. SUPABASE & CONFIGS
+    // =======================================================
+    const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Insera sua chave anon pública do Supabase
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Avatar Neutro Sem Gênero em Formato SVG Vetorial
+    const AVATAR_PADRAO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23717783'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-3.8-.85-5.05-2.2.03-1.68 3.37-2.6 5.05-2.6s5.02.92 5.05 2.6C15.8 19.15 14.03 20 12 20z'/></svg>";
+
+    let currentUser = "";
+    let currentGroup = "geral";
+    let currentUserAvatar = AVATAR_PADRAO;
+    let isInitialLoad = true;
+
+    // =======================================================
+    // 3. LOGIN & PERFIL
+    // =======================================================
+    function checkSession() {
+        const savedUser = localStorage.getItem("chat_username");
+        const savedGroup = localStorage.getItem("chat_group");
+        const savedAvatar = localStorage.getItem("chat_avatar");
+
+        if (savedUser && savedGroup) {
+            currentUser = savedUser;
+            currentGroup = savedGroup;
+            currentUserAvatar = savedAvatar || AVATAR_PADRAO;
+            startChat();
+        } else {
+            document.getElementById("login-modal").classList.remove("hidden");
+            document.getElementById("app-window").classList.add("hidden");
+        }
+    }
+
+    function handleLogin() {
+        const userInput = document.getElementById("login-username").value.trim();
+        const groupInput = document.getElementById("login-group").value.trim();
+
+        if (!userInput || !groupInput) {
+            alert("Por favor, informe seu Nome e a Sala.");
+            return;
+        }
+
+        currentUser = userInput;
+        currentGroup = groupInput.toLowerCase();
+        currentUserAvatar = AVATAR_PADRAO;
+
+        localStorage.setItem("chat_username", currentUser);
+        localStorage.setItem("chat_group", currentGroup);
+        localStorage.setItem("chat_avatar", currentUserAvatar);
+
+        document.getElementById("login-modal").classList.add("hidden");
+        startChat();
+    }
+
+    function toggleProfileModal() {
+        const modal = document.getElementById("profile-modal");
+        modal.classList.toggle("hidden");
+        if(!modal.classList.contains("hidden")) {
+            document.getElementById("preview-avatar-img").src = currentUserAvatar;
+        }
+    }
+
+    // Leitor do arquivo local escolhido do dispositivo
+    function handleAvatarUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentUserAvatar = e.target.result;
+                localStorage.setItem("chat_avatar", currentUserAvatar);
+                updateAvatarUI();
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function resetAvatarToDefault() {
+        currentUserAvatar = AVATAR_PADRAO;
+        localStorage.setItem("chat_avatar", currentUserAvatar);
+        updateAvatarUI();
+    }
+
+    function updateAvatarUI() {
+        document.getElementById("header-avatar-img").src = currentUserAvatar;
+        document.getElementById("sidebar-avatar-img").src = currentUserAvatar;
+        document.getElementById("preview-avatar-img").src = currentUserAvatar;
+    }
+
+    function handleLogoff() {
+        localStorage.removeItem("chat_username");
+        localStorage.removeItem("chat_group");
+        localStorage.removeItem("chat_avatar");
+        location.reload();
+    }
+
+    function startChat() {
+        document.getElementById("app-window").classList.remove("hidden");
+
+        document.getElementById("header-user-name").innerText = `@${currentUser}`;
+        document.getElementById("sidebar-user-name").innerText = `@${currentUser}`;
+        document.getElementById("header-group-name").innerText = currentGroup;
+        document.getElementById("sidebar-group-name").innerText = `Sala: ${currentGroup}`;
+        
+        updateAvatarUI();
+        fetchMessages();
+        subscribeRealtime();
+    }
+
+    // =======================================================
+    // 4. MENSAGENS, EMOJI & EFEITOS
+    // =======================================================
+    const chatContainer = document.getElementById("chat-messages");
+
+    function renderMessage(msg, isRealtime = false) {
+        const isMe = msg.usuario === currentUser;
+
+        if (msg.texto === "__NUDGE__") {
+            const nudgeDiv = document.createElement("div");
+            nudgeDiv.className = "flex justify-center my-2";
+            nudgeDiv.innerHTML = `
+                <div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold">
+                    <span class="material-symbols-outlined text-base">notifications_active</span>
+                    <span>${msg.usuario} chamou a atenção de todos!</span>
+                </div>
+            `;
+            chatContainer.appendChild(nudgeDiv);
+            scrollToBottom();
+
+            if (isRealtime && !isMe) {
+                triggerNudgeEffect();
+            }
+            return;
+        }
+
+        if (isRealtime && !isMe) {
+            playSound(audioMessage);
+        }
+
+        const msgWrapper = document.createElement("div");
+        msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
+
+        const avatarUrl = msg.avatar || AVATAR_PADRAO;
+        const bubbleClass = isMe 
+            ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' 
+            : 'message-bubble-incoming rounded-2xl rounded-tl-none';
+
+        msgWrapper.innerHTML = `
+            ${!isMe ? `<img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
+                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${msg.usuario}</span>
+                <div class="${bubbleClass} px-3 py-2 text-sm text-on-surface">
+                    ${formatMessageBody(msg.texto)}
+                </div>
+            </div>
+            ${isMe ? `<img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
+        `;
+
+        chatContainer.appendChild(msgWrapper);
+        scrollToBottom();
+    }
+
+    function formatMessageBody(texto) {
+        if (texto.startsWith("[ANEXO]:")) {
+            const fileName = texto.replace("[ANEXO]:", "");
+            return `
+                <div class="flex items-center gap-2 font-bold text-xs text-primary">
+                    <span class="material-symbols-outlined text-base">description</span>
+                    <span>${escapeHtml(fileName)}</span>
+                </div>
+            `;
+        }
+        return escapeHtml(texto);
+    }
+
+    function triggerNudgeEffect() {
+        playSound(audioNudge);
+        chatContainer.classList.add('nudge-alert');
+        
+        const flash = document.createElement('div');
+        flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
+        document.body.appendChild(flash);
+
+        setTimeout(() => {
+            chatContainer.classList.remove('nudge-alert');
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 300);
+        }, 500);
+    }
+
+    function escapeHtml(str) {
+        return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function toggleEmojiPopover() {
+        document.getElementById("emoji-popover").classList.toggle("hidden");
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById("message-input");
+        input.value += emoji;
+        document.getElementById("emoji-popover").classList.add("hidden");
+        input.focus();
+    }
+
+    // =======================================================
+    // 5. OPERAÇÕES DE MENSAGEM & SUPABASE
+    // =======================================================
+    async function fetchMessages() {
+        isInitialLoad = true;
+        const { data, error } = await _supabase
+            .from("mensagens")
+            .select("*")
+            .eq("grupo", currentGroup)
+            .order("id", { ascending: true });
+
+        if (error) {
+            console.warn("Aviso Supabase ao buscar:", error.message);
+            return;
+        }
+
+        chatContainer.innerHTML = "";
+        if (data) data.forEach(msg => renderMessage(msg, false));
+        isInitialLoad = false;
+    }
+
+    async function sendMessage(textToSend = null) {
+        const input = document.getElementById("message-input");
+        const texto = textToSend || input.value.trim();
+        
+        if (!texto) return;
+
+        if (!textToSend) input.value = "";
+
+        const payload = { 
+            usuario: currentUser, 
+            texto: texto, 
+            grupo: currentGroup,
+            avatar: currentUserAvatar 
+        };
+
+        const { error } = await _supabase.from("mensagens").insert([payload]);
+
+        if (error) {
+            console.warn("Aviso Supabase ao enviar. Exibindo localmente:", error.message);
+            renderMessage(payload, true);
+        }
+    }
+
+    async function sendNudge() {
+        const payload = { 
+            usuario: currentUser, 
+            texto: "__NUDGE__", 
+            grupo: currentGroup,
+            avatar: currentUserAvatar 
+        };
+
+        const { error } = await _supabase.from("mensagens").insert([payload]);
+
+        if (error) {
+            renderMessage(payload, true);
+        }
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            sendMessage(`[ANEXO]: ${file.name}`);
+            event.target.value = "";
+        }
+    }
+
+    function subscribeRealtime() {
+        _supabase
+            .channel(`sala-${currentGroup}`)
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'mensagens',
+                filter: `grupo=eq.${currentGroup}` 
+            }, payload => {
+                if (!isInitialLoad) {
+                    renderMessage(payload.new, true);
+                }
+            })
+            .subscribe();
+    }
+
+    document.getElementById("message-input").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+
+    window.onload = checkSession;
+</script>
+</body>
+</html>
