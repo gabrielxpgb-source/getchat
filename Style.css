@@ -1,0 +1,304 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #333;
+}
+
+.esconde {
+  display: none !important;
+}
+
+/* Janela Principal Estilo MSN */
+.msn-window {
+  background: #ffffff;
+  border: 1px solid #7192be;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  width: 900px;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Janela de Login */
+.login-card {
+  width: 380px;
+  height: auto;
+  padding-bottom: 25px;
+}
+
+.window-header {
+  background: linear-gradient(to bottom, #2b70c9 0%, #174b93 100%);
+  color: white;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+  font-size: 0.8rem;
+}
+
+.login-body {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+.avatar-placeholder {
+  font-size: 3rem;
+  background: #eef4fc;
+  width: 80px;
+  height: 80px;
+  line-height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 10px;
+  border: 2px solid #a4c2e6;
+}
+
+input[type="text"] {
+  padding: 9px 12px;
+  border: 1px solid #a0b6d5;
+  border-radius: 4px;
+  outline: none;
+  font-size: 0.9rem;
+}
+
+input[type="text"]:focus {
+  border-color: #2b70c9;
+  box-shadow: 0 0 5px rgba(43, 112, 201, 0.4);
+}
+
+.msn-btn {
+  background: linear-gradient(to bottom, #4b92e6 0%, #1e5ba8 100%);
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.msn-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* Layout do Chat */
+.chat-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar de Contatos */
+.sidebar-contatos {
+  width: 260px;
+  background: #eef4fc;
+  border-right: 1px solid #d0deee;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  background: #d8e5f5;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #3b5998;
+  border-bottom: 1px solid #c4d7ed;
+}
+
+.contatos-lista {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.contato-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #e1ebf7;
+  transition: background 0.2s;
+}
+
+.contato-item:hover, .contato-item.ativo {
+  background: #d3e3f7;
+}
+
+.contato-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.contato-info strong {
+  font-size: 0.85rem;
+  color: #222;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contato-info small {
+  font-size: 0.75rem;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.status-dot.online { background: #28a745; }
+.status-dot.offline { background: #adb5bd; }
+
+/* Área Principal de Mensagens */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.chat-topbar {
+  padding: 10px 15px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #e1ebf7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-voltar {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.mensagens-box {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fbfdff;
+}
+
+.msg-item {
+  max-width: 70%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #e9ecef;
+  align-self: flex-start;
+  font-size: 0.9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.msg-item.minha-msg {
+  align-self: flex-end;
+  background: #d1e7dd;
+}
+
+.msg-item.msg-nudge {
+  align-self: center;
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.msg-autor {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #495057;
+  margin-bottom: 3px;
+  display: block;
+}
+
+.toolbar {
+  padding: 5px 15px;
+  background: #f1f5fb;
+  border-top: 1px solid #d9e3f0;
+  display: flex;
+  gap: 10px;
+}
+
+.msn-tool-btn {
+  background: transparent;
+  border: 1px solid #b8ceea;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #2b70c9;
+  font-weight: bold;
+}
+
+.msn-tool-btn:hover {
+  background: #dbe7f7;
+}
+
+.chat-footer {
+  padding: 10px 15px;
+  display: flex;
+  gap: 10px;
+  background: #ffffff;
+  border-top: 1px solid #e1ebf7;
+}
+
+.chat-footer input {
+  flex: 1;
+}
+
+/* Animação do Chamar Atenção (Treme-Treme) */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.shake-animation {
+  animation: shake 0.5s;
+}
