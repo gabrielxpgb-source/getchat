@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat - Gestão Corporativa</title>
+    <title>GetChat</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -57,6 +57,7 @@
             transition: all 0.3s ease;
         }
 
+        /* Estilos Modo Noturno */
         body.dark {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             color: #f1f5f9;
@@ -153,6 +154,7 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
 
+        /* Fundos Dinâmicos do Chat */
         .chat-bg-cubes { background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); }
         .chat-bg-dots { background-image: url('https://www.transparenttextures.com/patterns/subtle-dots.png'); }
         .chat-bg-grid { background-image: url('https://www.transparenttextures.com/patterns/grid.png'); }
@@ -161,35 +163,36 @@
 </head>
 <body class="p-4" id="app-body">
 
-<!-- 1. TELA DE LOGIN ÚNICA (SEM CADASTRO PÚBLICO) -->
+<!-- 1. TELA DE LOGIN -->
 <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
-    <div class="glass-window p-8 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-5">
+    <div class="glass-window p-8 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
         
-        <div class="flex flex-col items-center justify-center gap-1 mb-2">
-            <span class="material-symbols-outlined text-primary text-5xl">forum</span>
+        <div class="flex items-center justify-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-primary text-4xl">forum</span>
             <h2 class="text-2xl font-bold text-primary">GetChat</h2>
-            <p class="text-xs text-outline text-center">Acesso restrito. Insira o seu código fornecido pelo administrador.</p>
         </div>
 
-        <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="flex flex-col gap-4">
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="flex flex-col gap-3">
             <div>
                 <label class="block text-xs font-bold text-on-surface-variant mb-1">Código de Acesso Rápido</label>
-                <input id="login-code-input" type="text" placeholder="Ex: gbmaster60106910" required class="w-full px-4 py-3 rounded-xl bg-white/80 border border-white focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm font-mono lowercase shadow-inner"/>
+                <!-- PLACEHOLDER NEUTRO SEM EXPOSIÇÃO DE CHAVES MASTER -->
+                <input id="login-code-input" type="text" placeholder="Digite seu código pessoal" required class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm lowercase"/>
             </div>
 
-            <button type="submit" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center justify-center gap-2">
-                <span>Entrar no Sistema</span>
+            <button type="submit" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
+                <span>Acessar Chat</span>
                 <span class="material-symbols-outlined text-sm">login</span>
             </button>
         </form>
 
-        <p id="authError" class="text-red-600 text-xs text-center hidden font-bold bg-red-100 p-2 rounded-lg border border-red-200"></p>
+        <p id="authError" class="text-red-600 text-xs text-center hidden font-bold"></p>
     </div>
 </div>
 
 <!-- 2. MODAL DE CONFIGURAÇÕES DO USUÁRIO -->
 <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md hidden">
     <div class="glass-window p-6 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        
         <div class="flex items-center justify-between border-b border-white/40 pb-3">
             <div class="flex items-center gap-2 text-primary">
                 <span class="material-symbols-outlined">settings</span>
@@ -200,6 +203,7 @@
             </button>
         </div>
 
+        <!-- Foto de Perfil Local -->
         <div class="flex items-center gap-4 bg-white/40 p-4 rounded-xl border border-white/60">
             <div class="relative group">
                 <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 shadow-sm bg-primary/10 flex items-center justify-center text-primary">
@@ -209,7 +213,7 @@
             </div>
             <div class="flex flex-col gap-1.5 flex-1">
                 <span class="text-xs font-bold text-on-surface">Foto de Perfil</span>
-                <p class="text-[11px] text-outline">Selecione uma imagem do seu dispositivo.</p>
+                <p class="text-[11px] text-outline">Selecione uma imagem do seu computador ou celular.</p>
                 <label class="gel-button text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-fit cursor-pointer shadow-sm">
                     <span class="material-symbols-outlined text-sm">upload</span>
                     <span>Alterar Foto</span>
@@ -218,8 +222,10 @@
             </div>
         </div>
 
+        <!-- Aparência e Tema -->
         <div class="space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Aparência & Interface</h3>
+            
             <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary">dark_mode</span>
@@ -237,32 +243,20 @@
                     <option value="chat-bg-cubes">Cubos 3D</option>
                     <option value="chat-bg-dots">Pontilhado</option>
                     <option value="chat-bg-grid">Grade</option>
-                    <option value="chat-bg-none">Limpo</option>
+                    <option value="chat-bg-none">Limpo (Sem Fundo)</option>
                 </select>
             </div>
         </div>
 
-        <div class="space-y-3">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Sons</h3>
-            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">volume_up</span>
-                    <span class="text-xs font-bold text-on-surface">Ativar Sons e Notificações</span>
-                </div>
-                <input type="checkbox" id="toggle-sounds" checked onchange="toggleSoundMute(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
-            </div>
-        </div>
-
         <button onclick="closeSettingsModal()" class="gel-button py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
-            Concluir
+            Salvar e Concluir
         </button>
     </div>
 </div>
 
-<!-- 3. PAINEL MASTER COMPLETO (Geral & Cadastro & Permissões Avançadas) -->
+<!-- 3. MODAL PAINEL MASTER / ADMIN -->
 <div id="master-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md hidden">
-    <div class="glass-window p-6 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-hidden">
-        
+    <div class="glass-window p-6 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-hidden">
         <div class="flex items-center justify-between border-b border-white/40 pb-3">
             <div class="flex items-center gap-2 text-amber-600">
                 <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
@@ -273,121 +267,54 @@
             </button>
         </div>
 
-        <!-- Abas Internas do Master -->
-        <div class="flex gap-2 border-b border-white/30 pb-2">
-            <button id="masterTabListBtn" onclick="switchMasterTab('list')" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white shadow-sm">Lista de Usuários</button>
-            <button id="masterTabCreateBtn" onclick="switchMasterTab('create')" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-white/60 text-on-surface hover:bg-white/80">Criar Novo Usuário</button>
-        </div>
-
-        <!-- Conteúdo Aba 1: Lista e Edição de Usuários -->
-        <div id="masterTabListContent" class="flex-1 flex flex-col overflow-hidden gap-3">
-            <div class="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white/60">
-                <span class="material-symbols-outlined text-outline text-sm ml-2">search</span>
-                <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Buscar por nome ou código..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
-            </div>
-
-            <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
-                <table class="w-full text-left text-xs">
-                    <thead>
-                        <tr class="border-b border-white/40 text-outline">
-                            <th class="pb-2 font-bold">Usuário</th>
-                            <th class="pb-2 font-bold">Código</th>
-                            <th class="pb-2 font-bold">Nível (Role)</th>
-                            <th class="pb-2 font-bold">Acesso ao Grupo?</th>
-                            <th class="pb-2 font-bold text-center">Status</th>
-                            <th class="pb-2 font-bold text-right">Ações de Gestão</th>
-                        </tr>
-                    </thead>
-                    <tbody id="master-users-tbody" class="divide-y divide-white/30">
-                        <!-- Preenchido via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Conteúdo Aba 2: Form de Criação de Usuário pelo Master -->
-        <div id="masterTabCreateContent" class="flex-1 overflow-y-auto custom-scrollbar hidden space-y-4 p-2">
-            <form onsubmit="handleMasterCreateUser(event)" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome Completo</label>
-                        <input id="m-fullname" type="text" required placeholder="Ex: João da Silva" class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white"/>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Data de Nascimento</label>
-                        <input id="m-birth" type="date" required class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white"/>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Nível de Acesso (Role)</label>
-                        <select id="m-role" class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white font-bold">
-                            <option value="user">Usuário Comum</option>
-                            <option value="admin">Administrador</option>
-                            <option value="master">Master</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-on-surface-variant mb-1">Permitir Visualizar Sala Pública (Grupo)?</label>
-                        <select id="m-group" class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white font-bold">
-                            <option value="true">Sim - Acesso Liberado</option>
-                            <option value="false">Não - Ocultar Grupo Público</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button type="submit" class="gel-button w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-md">
-                    Cadastrar Usuário & Gerar Código
+        <!-- Cadastro Exclusivo por Master / Admin -->
+        <div class="bg-white/40 p-3 rounded-xl border border-white/60 space-y-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-outline flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">person_add</span>
+                Cadastrar Novo Usuário (Exclusivo Master)
+            </h3>
+            <form id="masterCreateUserForm" onsubmit="handleMasterCreateUserSubmit(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input id="master-fullname-input" type="text" placeholder="Nome Completo" required class="px-3 py-1.5 rounded-lg bg-white/80 border border-white/80 focus:outline-none text-xs"/>
+                <input id="master-birth-input" type="date" required class="px-3 py-1.5 rounded-lg bg-white/80 border border-white/80 focus:outline-none text-xs"/>
+                <button type="submit" class="gel-button px-3 py-1.5 rounded-lg text-white font-bold text-xs flex items-center justify-center gap-1 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">add_circle</span>
+                    <span>Gerar Conta</span>
                 </button>
             </form>
-        </div>
-
-    </div>
-</div>
-
-<!-- MODAL DE EDIÇÃO AVANÇADA DE PERMISSÕES DO USUÁRIO -->
-<div id="edit-user-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md hidden">
-    <div class="glass-window p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto custom-scrollbar">
-        <div class="flex items-center justify-between border-b border-white/40 pb-2">
-            <h3 id="edit-modal-title" class="text-sm font-bold text-primary">Editar Permissões do Usuário</h3>
-            <button onclick="closeEditUserModal()" class="p-1 hover:bg-black/10 rounded-full text-outline"><span class="material-symbols-outlined">close</span></button>
-        </div>
-
-        <input type="hidden" id="edit-user-id"/>
-
-        <div>
-            <label class="block text-xs font-bold mb-1">Nome Completo</label>
-            <input id="edit-user-fullname" type="text" class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white"/>
-        </div>
-
-        <div>
-            <label class="block text-xs font-bold mb-1">Pode Acessar o Grupo Geral?</label>
-            <select id="edit-user-can-group" class="w-full text-xs px-3 py-2 rounded-xl bg-white/80 border border-white font-bold">
-                <option value="true">Sim (Liberado)</option>
-                <option value="false">Não (Bloqueado do Grupo)</option>
-            </select>
-        </div>
-
-        <div>
-            <label class="block text-xs font-bold mb-1">Contatos Permitidos no Privado (DM):</label>
-            <p class="text-[10px] text-outline mb-2">Marque os contatos com quem este usuário poderá conversar.</p>
-            <div id="allowed-contacts-selector" class="space-y-1 max-h-40 overflow-y-auto p-2 bg-white/50 rounded-xl border border-white/60 text-xs">
-                <!-- Gerado Dinamicamente -->
+            <div id="masterCreatedCodeAlert" class="hidden p-2 bg-green-500/20 border border-green-500/40 rounded-lg text-xs font-bold text-green-900 flex items-center justify-between">
+                <span>Usuário criado! Código de acesso: <span id="masterGeneratedCode" class="font-mono font-black text-sm text-primary"></span></span>
+                <button type="button" onclick="copyMasterCode()" class="px-2.5 py-1 bg-primary text-white rounded-md text-[10px] font-bold shadow-sm">Copiar Código</button>
             </div>
         </div>
 
-        <button onclick="saveUserPermissions()" class="gel-button w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
-            Salvar Alterações
-        </button>
+        <div class="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white/60">
+            <span class="material-symbols-outlined text-outline text-sm ml-2">search</span>
+            <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Buscar usuário por nome ou código..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-white/40 text-outline">
+                        <th class="pb-2 font-bold">Usuário</th>
+                        <th class="pb-2 font-bold">Código</th>
+                        <th class="pb-2 font-bold">Permissão (Role)</th>
+                        <th class="pb-2 font-bold text-right">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="master-users-tbody" class="divide-y divide-white/30">
+                    <!-- Gerado dinamicamente -->
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<!-- MODAL DE AMPLIAR IMAGEM -->
+<!-- MODAL DE PREVIEW DE IMAGEM -->
 <div id="image-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden" onclick="closeImageModal()">
     <div class="relative max-w-[90vw] max-h-[90vh] p-2" onclick="event.stopPropagation()">
         <img id="image-modal-img" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-white/40 object-contain"/>
-        <button onclick="closeImageModal()" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full p-1.5 shadow-lg">
+        <button onclick="closeImageModal()" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:bg-red-700 transition-colors">
             <span class="material-symbols-outlined text-sm">close</span>
         </button>
     </div>
@@ -412,19 +339,20 @@
         </div>
         
         <div class="flex items-center gap-3 relative z-20">
-            <button id="master-panel-btn" onclick="openMasterModal()" title="Painel Master" class="hidden flex items-center justify-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-xs rounded-lg shadow-sm transition-all border border-amber-300">
-                <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+            <!-- Botão Painel Master (Exibido para Master / Admin) -->
+            <button id="master-panel-btn" onclick="openMasterModal()" title="Painel Master" class="hidden flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-bold text-xs rounded-xl shadow-md transition-all border border-amber-200">
+                <span class="material-symbols-outlined text-base">admin_panel_settings</span>
                 <span>Painel Master</span>
             </button>
 
-            <button onclick="openSettingsModal()" title="Configurações" class="flex items-center justify-center w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full text-white border border-white/30">
+            <button onclick="openSettingsModal()" title="Configurações" class="flex items-center justify-center w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full transition-all text-white border border-white/30">
                 <span class="material-symbols-outlined text-lg">settings</span>
             </button>
 
             <div class="flex items-center gap-3">
                 <div class="flex flex-col items-end">
                     <div class="flex items-center gap-1.5">
-                        <span id="header-user-badge" class="hidden text-[9px] font-black px-1.5 py-0.2 rounded uppercase"></span>
+                        <span id="header-user-badge" class="hidden text-[9px] font-black px-1.5 py-0.5 rounded uppercase"></span>
                         <span id="header-user-name" class="text-xs font-bold drop-shadow-sm">@usuario</span>
                     </div>
                     <span class="text-[10px] text-green-300 font-semibold flex items-center gap-1">
@@ -470,10 +398,9 @@
             </div>
 
             <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-                <!-- Seção Grupo Público (Pode ser ocultada pelo Master) -->
-                <div id="sidebar-group-section">
+                <div>
                     <h3 class="px-1 text-[10px] font-bold uppercase tracking-wider text-outline/80 mb-1">Salas Públicas</h3>
-                    <div id="btn-main-room" onclick="switchToMainGroup()" class="relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer hover:opacity-90">
+                    <div id="btn-main-room" onclick="switchToMainGroup()" class="relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
                         <div class="flex items-center gap-2.5 overflow-hidden">
                             <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                                 <span class="material-symbols-outlined text-base">groups</span>
@@ -489,7 +416,7 @@
 
                 <div>
                     <div class="flex items-center justify-between px-1 mb-1.5">
-                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Contatos Liberados</h3>
+                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Usuários Online</h3>
                         <span id="online-count-badge" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </div>
                     <div id="online-users-list" class="space-y-1"></div>
@@ -497,7 +424,7 @@
             </div>
 
             <div class="p-3 border-t border-white/30 bg-white/10">
-                <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 border border-red-200">
+                <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors border border-red-200">
                     <span class="material-symbols-outlined text-sm">logout</span>
                     <span>Encerrar Sessão</span>
                 </button>
@@ -512,7 +439,7 @@
                     <h2 id="current-chat-title-header" class="text-xs font-bold text-on-surface">Histórico de Mensagens</h2>
                 </div>
                 <span id="typing-indicator" class="hidden text-xs text-primary font-medium flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                    <span id="typing-username">Alguém</span> está digitando
+                    <span id="typing-username">Alguém</span> está digitando...
                 </span>
             </div>
 
@@ -525,16 +452,22 @@
                 <button onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1 rounded text-lg">😎</button>
                 <button onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1 rounded text-lg">👍</button>
                 <button onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1 rounded text-lg">🔥</button>
+                <button onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1 rounded text-lg">🎉</button>
+                <button onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1 rounded text-lg">❤️</button>
+                <button onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1 rounded text-lg">🙏</button>
+                <button onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1 rounded text-lg">🤔</button>
+                <button onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1 rounded text-lg">👋</button>
+                <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
             </div>
 
             <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="sendNudge()" class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white text-xs font-bold text-on-surface-variant shadow-sm">
+                    <button onclick="sendNudge()" class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm">
                         <span class="material-symbols-outlined text-sm text-amber-600">notifications</span>
                         <span>Chamar Atenção</span>
                     </button>
                     
-                    <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
+                    <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
                         <span class="material-symbols-outlined text-sm">attach_file</span>
                         <span>Anexar Arquivo</span>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)"/>
@@ -548,7 +481,7 @@
                             <span onclick="toggleEmojiPopover()" class="material-symbols-outlined cursor-pointer hover:text-primary select-none">sentiment_satisfied</span>
                         </div>
                     </div>
-                    <button onclick="sendMessage()" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 shadow-md">
+                    <button onclick="sendMessage()" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md">
                         <span class="relative z-10">Enviar</span>
                         <span class="material-symbols-outlined text-sm relative z-10">send</span>
                     </button>
@@ -559,25 +492,6 @@
 </div>
 
 <script>
-    // =======================================================
-    // 1. SUPABASE & CONFIGURAÇÕES GERAIS
-    // =======================================================
-    const SOUNDS = {
-        message: new Audio('sounds/message.mp3'),
-        nudge: new Audio('sounds/nudge.mp3'),
-        online: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
-    };
-
-    let userSettings = { soundsEnabled: true, darkMode: false, bgStyle: 'chat-bg-cubes' };
-
-    function playSound(type) {
-        if (!userSettings.soundsEnabled) return;
-        if (SOUNDS[type]) {
-            SOUNDS[type].currentTime = 0;
-            SOUNDS[type].play().catch(() => {});
-        }
-    }
-
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -596,40 +510,94 @@
     let profileSubscription = null;
     let masterUsersCache = [];
 
-    // =======================================================
-    // 2. AUTENTICAÇÃO E SESSÃO
-    // =======================================================
+    let userSettings = {
+        soundsEnabled: true,
+        darkMode: false,
+        bgStyle: 'chat-bg-cubes'
+    };
+
     async function checkSession() {
         const savedUser = localStorage.getItem("chat_user");
 
         if (savedUser) {
-            const localData = JSON.parse(savedUser);
-            const { data: profile, error } = await _supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', localData.id)
-                .maybeSingle();
+            try {
+                const localData = JSON.parse(savedUser);
+                const { data: profile, error } = await _supabase.from('profiles').select('*').eq('id', localData.id).single();
 
-            if (error || !profile) {
+                if (error || !profile) {
+                    handleLogoff();
+                    return;
+                }
+
+                if (profile.is_banned) {
+                    alert("Sua conta foi suspensa por um Administrador.");
+                    handleLogoff();
+                    return;
+                }
+
+                currentUserProfile = profile;
+                currentUser = currentUserProfile.nome_exibicao || currentUserProfile.nome_completo;
+                localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
+
+                mainGroup = "geral";
+                activeChatRoom = mainGroup;
+                startChat();
+            } catch (e) {
                 handleLogoff();
-                return;
             }
-
-            if (profile.is_banned) {
-                alert("Sua conta foi suspensa por um Administrador Master.");
-                handleLogoff();
-                return;
-            }
-
-            currentUserProfile = profile;
-            currentUser = currentUserProfile.nome_exibicao;
-            localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
-
-            startChat();
         } else {
             document.getElementById("login-modal").classList.remove("hidden");
             document.getElementById("app-window").classList.add("hidden");
         }
+    }
+
+    function formatDisplayName(fullName) {
+        const parts = fullName.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        return `${parts[0]} ${parts[parts.length - 1]}`;
+    }
+
+    async function handleMasterCreateUserSubmit(e) {
+        e.preventDefault();
+        const fullName = document.getElementById('master-fullname-input').value.trim();
+        const birthDate = document.getElementById('master-birth-input').value;
+
+        if (!fullName || !birthDate) return;
+
+        const firstName = fullName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+        const dateParts = birthDate.split('-');
+        let generatedCode = `${firstName}${dateParts[2]}${dateParts[1]}${dateParts[0].slice(-2)}`;
+        const displayName = formatDisplayName(fullName);
+
+        try {
+            const { data: existing } = await _supabase.from('profiles').select('codigo_acesso').eq('codigo_acesso', generatedCode);
+            if (existing && existing.length > 0) generatedCode += Math.floor(10 + Math.random() * 90);
+
+            const { data, error } = await _supabase.from('profiles').insert([{
+                codigo_acesso: generatedCode,
+                nome_completo: fullName,
+                nome_exibicao: displayName,
+                data_nascimento: birthDate,
+                role: 'user',
+                is_banned: false
+            }]).select().single();
+
+            if (error) throw error;
+
+            document.getElementById('masterGeneratedCode').textContent = generatedCode;
+            document.getElementById('masterCreatedCodeAlert').classList.remove('hidden');
+            document.getElementById('masterCreateUserForm').reset();
+            
+            await loadMasterUsersList();
+        } catch (err) {
+            alert('Erro ao cadastrar usuário: ' + err.message);
+        }
+    }
+
+    function copyMasterCode() {
+        const code = document.getElementById('masterGeneratedCode').textContent;
+        navigator.clipboard.writeText(code);
+        alert('Código de acesso copiado!');
     }
 
     async function handleLoginSubmit(e) {
@@ -640,18 +608,13 @@
         const codeInput = document.getElementById("login-code-input").value.trim().toLowerCase();
 
         try {
-            const { data, error } = await _supabase
-                .from('profiles')
-                .select('*')
-                .eq('codigo_acesso', codeInput)
-                .maybeSingle();
+            const { data, error } = await _supabase.from('profiles').select('*').eq('codigo_acesso', codeInput).single();
+            if (error || !data) throw new Error('Código de acesso inválido ou não encontrado.');
 
-            if (error) throw error;
-            if (!data) throw new Error('Código de acesso inválido ou inexistente.');
-            if (data.is_banned) throw new Error('Esta conta está suspensa pelo Administrador Master.');
+            if (data.is_banned) throw new Error('Esta conta foi suspensa por um Administrador.');
 
             currentUserProfile = data;
-            currentUser = currentUserProfile.nome_exibicao;
+            currentUser = currentUserProfile.nome_exibicao || currentUserProfile.nome_completo;
             localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
             
             document.getElementById("login-modal").classList.add("hidden");
@@ -676,36 +639,25 @@
 
         updateUserRoleBadge();
         updateUserAvatarUI(currentUserProfile.avatar_url);
-        applyGroupAccessRules();
-
-        if (currentUserProfile.can_access_group !== false) {
-            switchToMainGroup();
-        } else {
-            chatContainer.innerHTML = `<div class="text-center p-8 text-outline italic text-xs">Sua conta não tem permissão para acessar a Sala Geral. Selecione um contato na lista ao lado.</div>`;
-        }
-
+        updateChatHeaderUI();
+        fetchMessages();
         setupRealtimeEngine();
         listenToOwnProfileChanges();
-    }
-
-    function applyGroupAccessRules() {
-        const groupSec = document.getElementById("sidebar-group-section");
-        if (currentUserProfile.can_access_group === false) {
-            groupSec.classList.add("hidden");
-            if (activeChatRoom === mainGroup) activeChatRoom = "";
-        } else {
-            groupSec.classList.remove("hidden");
-        }
     }
 
     function updateUserRoleBadge() {
         const badge = document.getElementById("header-user-badge");
         const masterBtn = document.getElementById("master-panel-btn");
-        const role = currentUserProfile.role || 'user';
+        const role = (currentUserProfile?.role || 'user').toLowerCase().trim();
 
-        if (role === 'master' || role === 'admin') {
-            badge.innerText = role.toUpperCase();
-            badge.className = `text-[9px] font-black px-1.5 py-0.5 rounded uppercase ${role === 'master' ? 'bg-amber-400 text-amber-950' : 'bg-purple-500 text-white'} shadow-sm`;
+        if (role === 'master') {
+            badge.innerText = "Master";
+            badge.className = "text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-amber-400 text-amber-950 shadow-sm";
+            badge.classList.remove("hidden");
+            masterBtn.classList.remove("hidden");
+        } else if (role === 'admin') {
+            badge.innerText = "Admin";
+            badge.className = "text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-purple-500 text-white shadow-sm";
             badge.classList.remove("hidden");
             masterBtn.classList.remove("hidden");
         } else {
@@ -727,38 +679,26 @@
             }, (payload) => {
                 const updated = payload.new;
                 if (updated.is_banned) {
-                    alert("A sua conta foi suspensa por um Administrador Master.");
+                    alert("Sua conta foi suspensa por um Administrador.");
                     handleLogoff();
                     return;
                 }
                 currentUserProfile = updated;
                 localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
                 updateUserRoleBadge();
-                applyGroupAccessRules();
-                renderOnlineUsersList();
             })
             .subscribe();
     }
 
-    // =======================================================
-    // 3. PAINEL MASTER (CADASTRO E BLOQUEIOS)
-    // =======================================================
-    function switchMasterTab(tab) {
-        if (tab === 'list') {
-            document.getElementById("masterTabListContent").classList.remove("hidden");
-            document.getElementById("masterTabCreateContent").classList.add("hidden");
-            document.getElementById("masterTabListBtn").className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white shadow-sm";
-            document.getElementById("masterTabCreateBtn").className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-white/60 text-on-surface hover:bg-white/80";
-        } else {
-            document.getElementById("masterTabListContent").classList.add("hidden");
-            document.getElementById("masterTabCreateContent").classList.remove("hidden");
-            document.getElementById("masterTabCreateBtn").className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white shadow-sm";
-            document.getElementById("masterTabListBtn").className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-white/60 text-on-surface hover:bg-white/80";
-        }
-    }
+    function openSettingsModal() { document.getElementById("settings-modal").classList.remove("hidden"); }
+    function closeSettingsModal() { document.getElementById("settings-modal").classList.add("hidden"); }
 
     async function openMasterModal() {
-        if (currentUserProfile.role !== 'master' && currentUserProfile.role !== 'admin') return;
+        const role = (currentUserProfile?.role || 'user').toLowerCase();
+        if (role !== 'master' && role !== 'admin') {
+            alert("Acesso negado. Esta área é restrita a administradores.");
+            return;
+        }
         document.getElementById("master-modal").classList.remove("hidden");
         await loadMasterUsersList();
     }
@@ -767,7 +707,10 @@
 
     async function loadMasterUsersList() {
         const { data, error } = await _supabase.from('profiles').select('*').order('nome_completo', { ascending: true });
-        if (error) return;
+        if (error) {
+            alert("Erro ao carregar lista de usuários: " + error.message);
+            return;
+        }
         masterUsersCache = data || [];
         renderMasterUserList(masterUsersCache);
     }
@@ -776,37 +719,40 @@
         const tbody = document.getElementById("master-users-tbody");
         tbody.innerHTML = "";
 
+        const myRole = (currentUserProfile?.role || 'user').toLowerCase();
+
         users.forEach(u => {
             const tr = document.createElement("tr");
             tr.className = "hover:bg-white/40 transition-colors";
+
             const isSelf = u.id === currentUserProfile.id;
+            const targetRole = (u.role || 'user').toLowerCase();
+            const canEditRole = myRole === 'master' && !isSelf;
+            const canBan = !isSelf && (myRole === 'master' || (myRole === 'admin' && targetRole === 'user'));
 
             tr.innerHTML = `
                 <td class="py-2.5 font-bold text-on-surface flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs overflow-hidden">
+                    <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs overflow-hidden shrink-0">
                         ${u.avatar_url ? `<img src="${u.avatar_url}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
                     </div>
-                    <span>${escapeHtml(u.nome_completo)}</span>
+                    <span class="truncate">${escapeHtml(u.nome_completo || u.nome_exibicao)}</span>
                 </td>
                 <td class="py-2.5 font-mono font-bold text-primary text-xs">${escapeHtml(u.codigo_acesso)}</td>
                 <td class="py-2.5">
-                    <span class="font-bold uppercase text-[10px] px-2 py-0.5 rounded ${u.role === 'master' ? 'bg-amber-200 text-amber-900' : u.role === 'admin' ? 'bg-purple-200 text-purple-900' : 'bg-gray-200 text-gray-800'}">${u.role || 'user'}</span>
+                    ${canEditRole ? `
+                        <select onchange="updateUserRole('${u.id}', this.value)" class="text-xs bg-white/80 border border-white rounded-lg py-1 px-2 font-semibold focus:ring-primary">
+                            <option value="user" ${targetRole === 'user' ? 'selected' : ''}>Usuário</option>
+                            <option value="admin" ${targetRole === 'admin' ? 'selected' : ''}>Admin</option>
+                            <option value="master" ${targetRole === 'master' ? 'selected' : ''}>Master</option>
+                        </select>
+                    ` : `<span class="font-bold uppercase text-[10px] px-2 py-0.5 rounded ${targetRole === 'master' ? 'bg-amber-200 text-amber-900' : targetRole === 'admin' ? 'bg-purple-200 text-purple-900' : 'bg-gray-200 text-gray-800'}">${targetRole}</span>`}
                 </td>
-                <td class="py-2.5 font-bold ${u.can_access_group !== false ? 'text-green-700' : 'text-red-600'}">
-                    ${u.can_access_group !== false ? 'Liberado' : 'Bloqueado'}
-                </td>
-                <td class="py-2.5 text-center">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.is_banned ? 'bg-red-200 text-red-900' : 'bg-green-200 text-green-900'}">${u.is_banned ? 'BANIDO' : 'ATIVO'}</span>
-                </td>
-                <td class="py-2.5 text-right flex items-center justify-end gap-1">
-                    ${!isSelf ? `
-                        <button onclick="openEditUserModal('${u.id}')" title="Configurar Permissões" class="p-1 bg-white hover:bg-gray-100 rounded border text-primary shadow-sm">
-                            <span class="material-symbols-outlined text-sm">settings</span>
-                        </button>
-                        <button onclick="toggleUserBan('${u.id}', ${!u.is_banned})" class="px-2 py-1 rounded text-xs font-bold ${u.is_banned ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}">
+                <td class="py-2.5 text-right">
+                    ${canBan ? `
+                        <button onclick="toggleUserBan('${u.id}', ${!u.is_banned})" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-sm ${u.is_banned ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}">
                             ${u.is_banned ? 'Desbanir' : 'Banir'}
                         </button>
-                    ` : `<span class="text-outline text-[10px] italic">Você</span>`}
+                    ` : `<span class="text-outline text-[11px] italic">${isSelf ? 'Sua Conta' : 'Protegido'}</span>`}
                 </td>
             `;
             tbody.appendChild(tr);
@@ -816,103 +762,17 @@
     function filterMasterUserList() {
         const query = document.getElementById("master-search-input").value.toLowerCase();
         const filtered = masterUsersCache.filter(u => 
-            u.nome_completo.toLowerCase().includes(query) || 
-            u.codigo_acesso.toLowerCase().includes(query)
+            (u.nome_completo && u.nome_completo.toLowerCase().includes(query)) || 
+            (u.nome_exibicao && u.nome_exibicao.toLowerCase().includes(query)) || 
+            (u.codigo_acesso && u.codigo_acesso.toLowerCase().includes(query))
         );
         renderMasterUserList(filtered);
     }
 
-    async function handleMasterCreateUser(e) {
-        e.preventDefault();
-        const fullName = document.getElementById("m-fullname").value.trim();
-        const birthDate = document.getElementById("m-birth").value;
-        const role = document.getElementById("m-role").value;
-        const canGroup = document.getElementById("m-group").value === 'true';
-
-        const firstName = fullName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-        const dateParts = birthDate.split('-');
-        let generatedCode = `${firstName}${dateParts[2]}${dateParts[1]}${dateParts[0].slice(-2)}`;
-
-        const parts = fullName.trim().split(/\s+/);
-        const displayName = parts.length === 1 ? parts[0] : `${parts[0]} ${parts[parts.length - 1]}`;
-
-        try {
-            const { error } = await _supabase.from('profiles').insert([{
-                codigo_acesso: generatedCode,
-                nome_completo: fullName,
-                nome_exibicao: displayName,
-                data_nascimento: birthDate,
-                role: role,
-                can_access_group: canGroup,
-                is_banned: false
-            }]);
-
-            if (error) throw error;
-
-            alert(`Usuário cadastrado com sucesso!\nCódigo de Acesso: ${generatedCode}`);
-            document.getElementById("m-fullname").value = "";
-            switchMasterTab('list');
-            await loadMasterUsersList();
-        } catch (err) {
-            alert("Erro ao cadastrar: " + err.message);
-        }
-    }
-
-    function openEditUserModal(userId) {
-        const user = masterUsersCache.find(u => u.id === userId);
-        if (!user) return;
-
-        document.getElementById("edit-user-id").value = user.id;
-        document.getElementById("edit-user-fullname").value = user.nome_completo;
-        document.getElementById("edit-user-can-group").value = user.can_access_group !== false ? 'true' : 'false';
-
-        const selector = document.getElementById("allowed-contacts-selector");
-        selector.innerHTML = "";
-
-        const allowedList = user.allowed_contacts || [];
-
-        masterUsersCache.forEach(otherUser => {
-            if (otherUser.id === user.id) return;
-            const isChecked = allowedList.length === 0 || allowedList.includes(otherUser.codigo_acesso) || allowedList.includes('*');
-
-            const div = document.createElement("label");
-            div.className = "flex items-center gap-2 p-1 hover:bg-white/60 rounded cursor-pointer";
-            div.innerHTML = `
-                <input type="checkbox" value="${otherUser.codigo_acesso}" class="contact-checkbox rounded text-primary focus:ring-primary" ${isChecked ? 'checked' : ''}/>
-                <span>${escapeHtml(otherUser.nome_completo)} (@${escapeHtml(otherUser.nome_exibicao)})</span>
-            `;
-            selector.appendChild(div);
-        });
-
-        document.getElementById("edit-user-modal").classList.remove("hidden");
-    }
-
-    function closeEditUserModal() { document.getElementById("edit-user-modal").classList.add("hidden"); }
-
-    async function saveUserPermissions() {
-        const userId = document.getElementById("edit-user-id").value;
-        const fullName = document.getElementById("edit-user-fullname").value.trim();
-        const canGroup = document.getElementById("edit-user-can-group").value === 'true';
-
-        const checkboxes = document.querySelectorAll(".contact-checkbox");
-        const selectedContacts = [];
-        checkboxes.forEach(cb => { if (cb.checked) selectedContacts.push(cb.value); });
-
-        try {
-            const { error } = await _supabase.from('profiles').update({
-                nome_completo: fullName,
-                can_access_group: canGroup,
-                allowed_contacts: selectedContacts
-            }).eq('id', userId);
-
-            if (error) throw error;
-
-            alert("Permissões salvas com sucesso!");
-            closeEditUserModal();
-            await loadMasterUsersList();
-        } catch (err) {
-            alert("Erro ao salvar: " + err.message);
-        }
+    async function updateUserRole(userId, newRole) {
+        const { error } = await _supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+        if (error) alert("Erro ao atualizar permissão: " + error.message);
+        else await loadMasterUsersList();
     }
 
     async function toggleUserBan(userId, targetBanStatus) {
@@ -921,9 +781,51 @@
         else await loadMasterUsersList();
     }
 
-    // =======================================================
-    // 4. REALTIME & MENSAGENS
-    // =======================================================
+    async function uploadAvatarFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `avatar_${currentUserProfile.id}_${Date.now()}.${fileExt}`;
+
+        try {
+            const { error: uploadError } = await _supabase.storage.from('avatars').upload(fileName, file, { upsert: true });
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = _supabase.storage.from('avatars').getPublicUrl(fileName);
+            const publicUrl = publicUrlData.publicUrl;
+
+            const { error: updateError } = await _supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUserProfile.id);
+            if (updateError) throw updateError;
+
+            currentUserProfile.avatar_url = publicUrl;
+            localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
+            updateUserAvatarUI(publicUrl);
+            alert('Foto de perfil atualizada!');
+        } catch (err) {
+            alert('Erro ao enviar foto: ' + err.message);
+        }
+    }
+
+    function updateUserAvatarUI(url) {
+        if (!url) return;
+        ['header-avatar', 'sidebar-avatar', 'settings-avatar-preview'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.src = url; el.classList.remove('hidden'); }
+        });
+    }
+
+    function toggleDarkMode(isDark) {
+        userSettings.darkMode = isDark;
+        if (isDark) document.body.classList.add('dark');
+        else document.body.classList.remove('dark');
+    }
+
+    function changeChatBackground(bgClass) {
+        userSettings.bgStyle = bgClass;
+        document.getElementById("chat-messages").className = `flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar ${bgClass}`;
+    }
+
     function setupRealtimeEngine() {
         if (presenceChannel) _supabase.removeChannel(presenceChannel);
 
@@ -945,7 +847,13 @@
                         }
                     }
                 });
+
                 renderOnlineUsersList();
+            })
+            .on('broadcast', { event: 'typing' }, payload => {
+                if (payload.payload.username !== currentUser && payload.payload.room === activeChatRoom) {
+                    showTypingIndicator(payload.payload.username);
+                }
             })
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
                 if (isInitialLoad) return;
@@ -955,77 +863,68 @@
                     renderMessage(newMsg, true);
                 } else if (newMsg.usuario !== currentUser) {
                     incrementUnread(newMsg.grupo);
-                    playSound('message');
                 }
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await presenceChannel.track({
                         username: currentUser,
-                        code: currentUserProfile.codigo_acesso,
-                        avatarUrl: currentUserProfile.avatar_url
+                        avatarUrl: currentUserProfile?.avatar_url || null,
+                        onlineAt: new Date().toISOString()
                     });
                 }
             });
     }
 
-    function renderOnlineUsersList() {
-        const container = document.getElementById("online-users-list");
-        const badge = document.getElementById("online-count-badge");
-        const filterText = document.getElementById("search-users-input").value.toLowerCase();
+    function incrementUnread(roomName) {
+        unreadCounts.set(roomName, (unreadCounts.get(roomName) || 0) + 1);
+        updateUnreadBadgesUI();
+    }
 
-        container.innerHTML = "";
-        const onlineUsersArray = Array.from(onlineUsersMap.keys());
+    function clearUnread(roomName) {
+        unreadCounts.delete(roomName);
+        updateUnreadBadgesUI();
+    }
 
-        const allowedContacts = currentUserProfile.allowed_contacts || [];
-        const isUnrestricted = allowedContacts.length === 0 || allowedContacts.includes('*');
-
-        let visibleCount = 0;
-
-        onlineUsersArray.forEach(username => {
-            const userData = onlineUsersMap.get(username);
-            const userCode = userData ? userData.code : '';
-
-            // Filtragem de contatos permitidos pelo Master
-            if (!isUnrestricted && !allowedContacts.includes(userCode)) return;
-            if (filterText && !username.toLowerCase().includes(filterText)) return;
-
-            visibleCount++;
-            const isCurrentDM = activeDMTargetUser === username;
-            const dmRoom = `dm_${[currentUser, username].sort().join('_')}`;
-            const unread = unreadCounts.get(dmRoom) || 0;
-
-            const item = document.createElement("div");
-            item.onclick = () => startPrivateChat(username);
-            item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                isCurrentDM ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' : 'hover:bg-white/60 text-on-surface'
-            }`;
-
-            item.innerHTML = `
-                <div class="flex items-center gap-2 overflow-hidden">
-                    <div class="relative flex-shrink-0">
-                        <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold overflow-hidden">
-                            ${userData && userData.avatarUrl ? `<img src="${userData.avatarUrl}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
-                        </div>
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
-                    </div>
-                    <span class="truncate">@${escapeHtml(username)}</span>
-                </div>
-                <div>${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>` : `<span class="material-symbols-outlined text-sm opacity-60">chat</span>`}</div>
-            `;
-            container.appendChild(item);
-        });
-
-        badge.innerText = visibleCount;
-        if (visibleCount === 0) {
-            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum contato liberado online.</p>`;
+    function updateUnreadBadgesUI() {
+        const badge = document.getElementById("unread-main-group");
+        const count = unreadCounts.get(mainGroup) || 0;
+        if (count > 0) {
+            badge.innerText = count;
+            badge.classList.remove("hidden");
+        } else {
+            badge.classList.add("hidden");
         }
+        renderOnlineUsersList();
+    }
+
+    function handleTypingEvent() {
+        if (presenceChannel) {
+            presenceChannel.send({
+                type: 'broadcast',
+                event: 'typing',
+                payload: { username: currentUser, room: activeChatRoom }
+            });
+        }
+    }
+
+    function showTypingIndicator(username) {
+        const indicator = document.getElementById("typing-indicator");
+        document.getElementById("typing-username").innerText = username;
+        indicator.classList.remove("hidden");
+
+        if (typingTimeout) clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => indicator.classList.add("hidden"), 2500);
+    }
+
+    function getDMRoomName(userA, userB) {
+        return `dm_${[userA, userB].sort().join('_')}`;
     }
 
     function startPrivateChat(targetUsername) {
         if (targetUsername === currentUser) return;
         activeDMTargetUser = targetUsername;
-        activeChatRoom = `dm_${[currentUser, targetUsername].sort().join('_')}`;
+        activeChatRoom = getDMRoomName(currentUser, targetUsername);
         clearUnread(activeChatRoom);
         updateChatHeaderUI();
         fetchMessages();
@@ -1033,7 +932,6 @@
     }
 
     function switchToMainGroup() {
-        if (currentUserProfile.can_access_group === false) return;
         activeDMTargetUser = null;
         activeChatRoom = mainGroup;
         clearUnread(mainGroup);
@@ -1050,91 +948,189 @@
         document.getElementById("chat-type-icon").innerText = isPrivate ? "lock" : "forum";
     }
 
+    function renderOnlineUsersList() {
+        const container = document.getElementById("online-users-list");
+        const badge = document.getElementById("online-count-badge");
+        const filterText = document.getElementById("search-users-input").value.toLowerCase();
+
+        container.innerHTML = "";
+        const onlineUsersArray = Array.from(onlineUsersMap.keys());
+        badge.innerText = onlineUsersArray.length;
+
+        if (onlineUsersArray.length === 0) {
+            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum outro usuário online.</p>`;
+            return;
+        }
+
+        onlineUsersArray.forEach(username => {
+            if (filterText && !username.toLowerCase().includes(filterText)) return;
+
+            const isCurrentDM = activeDMTargetUser === username;
+            const dmRoom = getDMRoomName(currentUser, username);
+            const unread = unreadCounts.get(dmRoom) || 0;
+            const userData = onlineUsersMap.get(username);
+
+            const item = document.createElement("div");
+            item.onclick = () => startPrivateChat(username);
+            item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                isCurrentDM ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' : 'hover:bg-white/60 text-on-surface'
+            }`;
+
+            item.innerHTML = `
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="relative shrink-0">
+                        <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold overflow-hidden">
+                            ${userData && userData.avatarUrl ? `<img src="${userData.avatarUrl}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
+                        </div>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <span class="truncate">@${escapeHtml(username)}</span>
+                </div>
+                <div>${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>` : `<span class="material-symbols-outlined text-sm opacity-60">chat</span>`}</div>
+            `;
+            container.appendChild(item);
+        });
+    }
+
+    function filterUserList() { renderOnlineUsersList(); }
+
     const chatContainer = document.getElementById("chat-messages");
+
+    async function fetchMessages() {
+        isInitialLoad = true;
+        const { data, error } = await _supabase
+            .from("mensagens")
+            .select("*")
+            .eq("grupo", activeChatRoom)
+            .order("id", { ascending: true });
+
+        if (!error && data) {
+            chatContainer.innerHTML = "";
+            data.forEach(msg => renderMessage(msg, false));
+        }
+        isInitialLoad = false;
+        scrollToBottom();
+    }
 
     function renderMessage(msg, isRealtime = false) {
         const isMe = msg.usuario === currentUser;
-        const timeFormatted = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         if (msg.texto === "__NUDGE__") {
             const nudgeDiv = document.createElement("div");
             nudgeDiv.className = "flex justify-center my-2";
-            nudgeDiv.innerHTML = `<div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-base">notifications_active</span><span>${escapeHtml(msg.usuario)} chamou a atenção!</span></div>`;
+            nudgeDiv.innerHTML = `
+                <div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold">
+                    <span class="material-symbols-outlined text-base">notifications_active</span>
+                    <span>${escapeHtml(msg.usuario)} chamou a atenção de todos!</span>
+                </div>
+            `;
             chatContainer.appendChild(nudgeDiv);
             scrollToBottom();
-            if (isRealtime && !isMe) triggerNudgeEffect();
+            if (isRealtime) triggerNudgeEffect();
             return;
         }
 
         const msgWrapper = document.createElement("div");
         msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
 
+        const bubbleClass = isMe 
+            ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' 
+            : 'message-bubble-incoming rounded-2xl rounded-tl-none';
+
         msgWrapper.innerHTML = `
-            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
+            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0 mt-1"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
                 <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
-                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group">
-                    <div class="pr-12 pb-1">${formatMessageContent(msg.texto)}</div>
-                    <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
+                <div class="${bubbleClass} px-3 py-2 text-sm text-on-surface">
+                    ${formatMessageBody(msg.texto)}
                 </div>
             </div>
-            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
+            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs shrink-0 mt-1"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
         scrollToBottom();
     }
 
-    function formatMessageContent(texto) {
-        if (texto.startsWith("[IMAGEM]:")) {
-            const imgData = texto.replace("[IMAGEM]:", "");
-            return `<img src="${imgData}" onclick="openImageModal('${imgData}')" class="max-w-[220px] max-h-[180px] rounded-xl object-cover border border-white/60 shadow-sm cursor-pointer hover:scale-105 transition-transform"/>`;
+    function formatMessageBody(texto) {
+        if (texto.startsWith("[ANEXO]:")) {
+            const fileName = texto.replace("[ANEXO]:", "");
+            return `
+                <div class="flex items-center gap-2 font-bold text-xs text-primary">
+                    <span class="material-symbols-outlined text-base">description</span>
+                    <span>${escapeHtml(fileName)}</span>
+                </div>
+            `;
         }
         return escapeHtml(texto);
     }
 
-    async function fetchMessages() {
-        if (!activeChatRoom) return;
-        isInitialLoad = true;
-        chatContainer.innerHTML = "";
-        const { data } = await _supabase.from("mensagens").select("*").eq("grupo", activeChatRoom).order("id", { ascending: true });
-        if (data) data.forEach(msg => renderMessage(msg, false));
-        isInitialLoad = false;
-    }
-
     async function sendMessage(textToSend = null) {
-        if (!activeChatRoom) return;
         const input = document.getElementById("message-input");
         const texto = textToSend || input.value.trim();
         if (!texto) return;
-        if (!textToSend) input.value = "";
 
-        const payload = { usuario: currentUser, texto: texto, grupo: activeChatRoom };
-        const { error } = await _supabase.from("mensagens").insert([payload]);
-        if (error) renderMessage(payload, true);
+        if (!textToSend) input.value = "";
+        document.getElementById("emoji-popover").classList.add("hidden");
+
+        const messageData = { 
+            usuario: currentUser, 
+            texto: texto, 
+            grupo: activeChatRoom
+        };
+
+        await _supabase.from("mensagens").insert([messageData]);
     }
 
     async function sendNudge() {
-        if (!activeChatRoom) return;
-        const payload = { usuario: currentUser, texto: "__NUDGE__", grupo: activeChatRoom };
-        await _supabase.from("mensagens").insert([payload]);
+        await sendMessage("__NUDGE__");
     }
 
-    function incrementUnread(roomName) { unreadCounts.set(roomName, (unreadCounts.get(roomName) || 0) + 1); }
-    function clearUnread(roomName) { unreadCounts.delete(roomName); }
-    function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
-    function filterUserList() { renderOnlineUsersList(); }
-    function openSettingsModal() { document.getElementById("settings-modal").classList.remove("hidden"); }
-    function closeSettingsModal() { document.getElementById("settings-modal").classList.add("hidden"); }
-    function toggleDarkMode(isDark) { document.body.classList.toggle('dark', isDark); }
-    function changeChatBackground(bgClass) { chatContainer.className = `flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar ${bgClass}`; }
-    function toggleSoundMute(enabled) { userSettings.soundsEnabled = enabled; }
-    function openImageModal(imgSrc) { document.getElementById("image-modal-img").src = imgSrc; document.getElementById("image-modal").classList.remove("hidden"); }
-    function closeImageModal() { document.getElementById("image-modal").classList.add("hidden"); }
-    function triggerNudgeEffect() { playSound('nudge'); chatContainer.classList.add('nudge-alert'); setTimeout(() => chatContainer.classList.remove('nudge-alert'), 500); }
-    function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            sendMessage(`[ANEXO]: ${file.name}`);
+            event.target.value = "";
+        }
+    }
 
-    document.getElementById("message-input").addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
+    function triggerNudgeEffect() {
+        chatContainer.classList.add('nudge-alert');
+        setTimeout(() => chatContainer.classList.remove('nudge-alert'), 500);
+    }
+
+    function toggleEmojiPopover() {
+        document.getElementById("emoji-popover").classList.toggle("hidden");
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById("message-input");
+        input.value += emoji;
+        input.focus();
+        toggleEmojiPopover();
+    }
+
+    function openImageModal(src) {
+        document.getElementById("image-modal-img").src = src;
+        document.getElementById("image-modal").classList.remove("hidden");
+    }
+
+    function closeImageModal() {
+        document.getElementById("image-modal").classList.add("hidden");
+    }
+
+    function escapeHtml(str) {
+        return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    document.getElementById("message-input").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") sendMessage();
+    });
+
     window.onload = checkSession;
 </script>
 </body>
