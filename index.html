@@ -149,7 +149,6 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
 
-        /* Animação do Indicador de Digitação */
         .dot-flashing {
             position: relative;
             width: 6px;
@@ -397,17 +396,16 @@
 
 <script>
     // =======================================================
-    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR
+    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR (COM FALLBACK WEB)
     // =======================================================
-    // Ajuste os caminhos abaixo conforme a localização real dos seus arquivos de som no servidor.
     const SOUNDS = {
-        message: new Audio('sounds/message.mp3'),
-        nudge: new Audio('sounds/nudge.mp3')
+        message: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'),
+        nudge: new Audio('https://assets.mixkit.co/active_storage/sfx/2874/2874-preview.mp3')
     };
 
     function playMessageSound() {
         SOUNDS.message.currentTime = 0;
-        SOUNDS.message.play().catch(() => {}); // catch para ignorar bloqueios do navegador antes do primeiro clique
+        SOUNDS.message.play().catch(() => {});
     }
 
     function playNudgeSound() {
@@ -419,7 +417,7 @@
     // 2. CONFIGURAÇÕES E ESTADO DO SUPABASE
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Lembre de colocar sua chave anon aqui
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Insira sua chave anon do Supabase aqui
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentUser = "";
@@ -428,7 +426,7 @@
     let activeDMTargetUser = null;
     
     let onlineUsersMap = new Map();
-    let unreadCounts = new Map(); // Armazena contagem de não lidos: key -> roomName, value -> count
+    let unreadCounts = new Map();
     let isInitialLoad = true;
     let typingTimeout = null;
     let presenceChannel = null;
@@ -490,7 +488,7 @@
     }
 
     // =======================================================
-    // 4. REALTIME ENGINE & NOTIFICAÇÕES NÃO LIDAS
+    // 4. REALTIME ENGINE & NOTIFICAÇÕES
     // =======================================================
     function setupRealtimeEngine() {
         if (presenceChannel) {
@@ -533,10 +531,8 @@
                 const msgRoom = newMsg.grupo;
 
                 if (msgRoom === activeChatRoom) {
-                    // Se o usuário já está com a sala aberta: renderiza direto
                     renderMessage(newMsg, true);
                 } else {
-                    // Se veio para outra sala/DM privada: incrementa o contador de não lidas
                     if (newMsg.usuario !== currentUser) {
                         incrementUnread(msgRoom);
                         playMessageSound();
@@ -565,7 +561,6 @@
     }
 
     function updateUnreadBadgesUI() {
-        // Atualiza a notificação da sala principal
         const mainGroupUnreadBadge = document.getElementById("unread-main-group");
         const mainGroupCount = unreadCounts.get(mainGroup) || 0;
 
@@ -576,7 +571,6 @@
             mainGroupUnreadBadge.classList.add("hidden");
         }
 
-        // Re-renderiza a lista para atualizar badges nas DMs
         renderOnlineUsersList();
     }
 
@@ -722,12 +716,18 @@
     }
 
     // =======================================================
-    // 7. MENSAGENS E PREVISUALIZAÇÃO DE MIDIAS (FOTO, ÁUDIO, VÍDEO)
+    // 7. MENSAGENS COM HORÁRIO E PRÉ-VISUALIZAÇÕES DE MÍDIA
     // =======================================================
     const chatContainer = document.getElementById("chat-messages");
 
+    function getFormattedTime(dateString) {
+        const date = dateString ? new Date(dateString) : new Date();
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
     function renderMessage(msg, isRealtime = false) {
         const isMe = msg.usuario === currentUser;
+        const timeFormatted = getFormattedTime(msg.created_at);
 
         if (msg.texto === "__NUDGE__") {
             const nudgeDiv = document.createElement("div");
@@ -766,8 +766,13 @@
             ` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
                 <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
-                <div class="${bubbleClass} px-3.5 py-2 text-sm text-on-surface">
-                    ${formatMessageContent(msg.texto)}
+                <div class="${bubbleClass} px-3.5 py-2 text-sm text-on-surface relative group">
+                    <div class="pr-12 pb-1">
+                        ${formatMessageContent(msg.texto)}
+                    </div>
+                    <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">
+                        ${timeFormatted}
+                    </span>
                 </div>
             </div>
             ${isMe ? `
@@ -782,7 +787,6 @@
     }
 
     function formatMessageContent(texto) {
-        // Pré-visualização de Imagens
         if (texto.startsWith("[IMAGEM]:")) {
             const imgData = texto.replace("[IMAGEM]:", "");
             return `
@@ -795,7 +799,6 @@
             `;
         }
 
-        // Pré-visualização de Vídeos
         if (texto.startsWith("[VIDEO]:")) {
             const videoData = texto.replace("[VIDEO]:", "");
             return `
@@ -811,7 +814,6 @@
             `;
         }
 
-        // Pré-visualização de Áudios
         if (texto.startsWith("[AUDIO]:")) {
             const audioData = texto.replace("[AUDIO]:", "");
             return `
@@ -827,7 +829,6 @@
             `;
         }
 
-        // Anexo de Documento Genérico
         if (texto.startsWith("[ARQUIVO]:")) {
             const rawData = texto.replace("[ARQUIVO]:", "");
             const parts = rawData.split("|");
