@@ -54,6 +54,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Estilos Modo Noturno */
+        body.dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #f1f5f9;
+        }
+        body.dark .glass-window {
+            background: rgba(15, 23, 42, 0.75);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+        body.dark .frosted-sidebar {
+            background: rgba(30, 41, 59, 0.5);
+        }
+        body.dark .message-bubble-incoming {
+            background: rgba(30, 41, 59, 0.9);
+            color: #f8fafc;
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .glass-window {
@@ -98,12 +117,6 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .message-bubble-incoming:hover, .message-bubble-outgoing:hover {
-            filter: brightness(1.05);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(0, 93, 172, 0.12);
-        }
-
         .nudge-alert {
             animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
@@ -128,14 +141,6 @@
             overflow: hidden;
             border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
-        .glossy-header::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 48%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 80%, rgba(255,255,255,0) 100%);
-            pointer-events: none;
-            border-radius: 0 0 50% 50% / 0 0 10% 10%;
-        }
         
         .frosted-sidebar {
             background: rgba(240, 244, 250, 0.4);
@@ -149,62 +154,29 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
 
-        .dot-flashing {
-            position: relative;
-            width: 6px;
-            height: 6px;
-            border-radius: 5px;
-            background-color: #005dac;
-            color: #005dac;
-            animation: dotFlashing 1s infinite linear alternate;
-            animation-delay: .5s;
-        }
-        .dot-flashing::before, .dot-flashing::after {
-            content: '';
-            display: inline-block;
-            position: absolute;
-            top: 0;
-            width: 6px;
-            height: 6px;
-            border-radius: 5px;
-            background-color: #005dac;
-            color: #005dac;
-        }
-        .dot-flashing::before {
-            left: -10px;
-            animation: dotFlashing 1s infinite alternate;
-            animation-delay: 0s;
-        }
-        .dot-flashing::after {
-            left: 10px;
-            animation: dotFlashing 1s infinite alternate;
-            animation-delay: 1s;
-        }
-        @keyframes dotFlashing {
-            0% { background-color: #005dac; }
-            50%, 100% { background-color: rgba(0, 93, 172, 0.2); }
-        }
+        /* Fundos Dinâmicos do Chat */
+        .chat-bg-cubes { background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); }
+        .chat-bg-dots { background-image: url('https://www.transparenttextures.com/patterns/subtle-dots.png'); }
+        .chat-bg-grid { background-image: url('https://www.transparenttextures.com/patterns/grid.png'); }
+        .chat-bg-none { background-image: none; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-4" id="app-body">
 
-<!-- 1. TELA DE LOGIN / CADASTRO COM CÓDIGO DE ACESSO -->
+<!-- 1. TELA DE LOGIN / CADASTRO -->
 <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
     <div class="glass-window p-8 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
         
-        <!-- Header Modal -->
         <div class="flex items-center justify-center gap-2 mb-2">
             <span class="material-symbols-outlined text-primary text-4xl">forum</span>
             <h2 class="text-2xl font-bold text-primary">GetChat</h2>
         </div>
 
-        <!-- TABS LOGIN vs CADASTRO -->
         <div class="flex border-b border-white/60 mb-2">
             <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 pb-2 font-bold text-sm text-primary border-b-2 border-primary transition-all">Entrar</button>
             <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 pb-2 font-bold text-sm text-outline border-b-2 border-transparent hover:text-primary transition-all">Criar Conta</button>
         </div>
 
-        <!-- FORMULÁRIO DE LOGIN -->
         <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="flex flex-col gap-3">
             <div>
                 <label class="block text-xs font-bold text-on-surface-variant mb-1">Código de Acesso Rápido</label>
@@ -217,7 +189,6 @@
             </button>
         </form>
 
-        <!-- FORMULÁRIO DE CADASTRO -->
         <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="flex flex-col gap-3 hidden">
             <div>
                 <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome Completo</label>
@@ -235,7 +206,6 @@
             </button>
         </form>
 
-        <!-- MODAL / ALERTA DE CÓDIGO CRIADO COM SUCESSO -->
         <div id="codeSuccessBox" class="hidden text-center flex flex-col gap-3">
             <div class="w-10 h-10 bg-green-500/20 text-green-700 rounded-full flex items-center justify-center mx-auto font-bold text-lg">✓</div>
             <h3 class="text-base font-bold text-on-surface">Cadastro Concluído!</h3>
@@ -253,6 +223,103 @@
     </div>
 </div>
 
+<!-- 2. MODAL DE CONFIGURAÇÕES DO USUÁRIO -->
+<div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md hidden">
+    <div class="glass-window p-6 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        
+        <div class="flex items-center justify-between border-b border-white/40 pb-3">
+            <div class="flex items-center gap-2 text-primary">
+                <span class="material-symbols-outlined">settings</span>
+                <h2 class="text-lg font-bold">Configurações Pessoais</h2>
+            </div>
+            <button onclick="closeSettingsModal()" class="p-1 hover:bg-black/10 rounded-full transition-colors text-outline">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <!-- Seção 1: Foto de Perfil Local -->
+        <div class="flex items-center gap-4 bg-white/40 p-4 rounded-xl border border-white/60">
+            <div class="relative group">
+                <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 shadow-sm bg-primary/10 flex items-center justify-center text-primary">
+                    <img id="settings-avatar-preview" src="" class="w-full h-full object-cover hidden"/>
+                    <span id="settings-avatar-placeholder" class="material-symbols-outlined text-3xl">person</span>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5 flex-1">
+                <span class="text-xs font-bold text-on-surface">Foto de Perfil</span>
+                <p class="text-[11px] text-outline">Selecione um arquivo de imagem do seu computador ou celular.</p>
+                <label class="gel-button text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-fit cursor-pointer shadow-sm">
+                    <span class="material-symbols-outlined text-sm">upload</span>
+                    <span>Alterar Foto</span>
+                    <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="uploadAvatarFile(event)"/>
+                </label>
+            </div>
+        </div>
+
+        <!-- Seção 2: Aparência e Tema -->
+        <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Aparência & Interface</h3>
+            
+            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">dark_mode</span>
+                    <span class="text-xs font-bold text-on-surface">Modo Noturno</span>
+                </div>
+                <input type="checkbox" id="toggle-darkmode" onchange="toggleDarkMode(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
+            </div>
+
+            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">wallpaper</span>
+                    <span class="text-xs font-bold text-on-surface">Fundo do Chat</span>
+                </div>
+                <select id="chat-bg-select" onchange="changeChatBackground(this.value)" class="text-xs rounded-lg border-white/80 bg-white/80 font-semibold focus:ring-primary">
+                    <option value="chat-bg-cubes">Cubos 3D</option>
+                    <option value="chat-bg-dots">Pontilhado</option>
+                    <option value="chat-bg-grid">Grade</option>
+                    <option value="chat-bg-none">Limpo (Sem Fundo)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">format_size</span>
+                    <span class="text-xs font-bold text-on-surface">Tamanho da Interface</span>
+                </div>
+                <select id="ui-scale-select" onchange="changeUIScale(this.value)" class="text-xs rounded-lg border-white/80 bg-white/80 font-semibold focus:ring-primary">
+                    <option value="normal">Padrão</option>
+                    <option value="large">Ampliada (+10%)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Seção 3: Sons e Notificações -->
+        <div class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Sons e Áudios</h3>
+
+            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">volume_up</span>
+                    <span class="text-xs font-bold text-on-surface">Sons de Mensagens e Nudges</span>
+                </div>
+                <input type="checkbox" id="toggle-sounds" checked onchange="toggleSoundMute(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
+            </div>
+
+            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">person_add</span>
+                    <span class="text-xs font-bold text-on-surface">Aviso Sonoro quando Usuário Entra Online</span>
+                </div>
+                <input type="checkbox" id="toggle-online-sound" checked onchange="toggleOnlineSound(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
+            </div>
+        </div>
+
+        <button onclick="closeSettingsModal()" class="gel-button py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
+            Salvar e Concluir
+        </button>
+    </div>
+</div>
+
 <!-- MODAL DE AMPLIAR IMAGEM -->
 <div id="image-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden" onclick="closeImageModal()">
     <div class="relative max-w-[90vw] max-h-[90vh] p-2" onclick="event.stopPropagation()">
@@ -263,7 +330,7 @@
     </div>
 </div>
 
-<!-- 2. JANELA PRINCIPAL DO CHAT -->
+<!-- 3. JANELA PRINCIPAL DO CHAT -->
 <div id="app-window" class="glass-window w-full max-w-[1024px] h-[720px] rounded-xl flex flex-col overflow-hidden hidden">
     
     <!-- Header Superior -->
@@ -282,6 +349,10 @@
         </div>
         
         <div class="flex items-center gap-4 relative z-20">
+            <button onclick="openSettingsModal()" title="Configurações" class="flex items-center justify-center w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full transition-all text-white border border-white/30">
+                <span class="material-symbols-outlined text-lg">settings</span>
+            </button>
+
             <div class="flex items-center gap-3">
                 <div class="flex flex-col items-end">
                     <span id="header-user-name" class="text-xs font-bold drop-shadow-sm">@usuario</span>
@@ -291,7 +362,8 @@
                     </span>
                 </div>
                 <div class="w-9 h-9 rounded-full border-2 border-white/80 overflow-hidden shadow-sm bg-white/30 flex items-center justify-center text-white">
-                    <span class="material-symbols-outlined text-xl">account_circle</span>
+                    <img id="header-avatar-img" src="" class="w-full h-full object-cover hidden"/>
+                    <span id="header-avatar-placeholder" class="material-symbols-outlined text-xl">account_circle</span>
                 </div>
             </div>
             
@@ -305,11 +377,11 @@
     <div class="flex flex-1 overflow-hidden">
         <!-- Sidebar Esquerda -->
         <aside class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
-            <!-- Perfil Local -->
             <div class="p-4 flex items-center gap-3 border-b border-white/30 bg-white/20">
                 <div class="relative">
                     <div class="w-10 h-10 rounded-xl overflow-hidden border border-white/70 shadow-sm bg-primary/20 flex items-center justify-center text-primary">
-                        <span class="material-symbols-outlined text-2xl">person</span>
+                        <img id="sidebar-avatar-img" src="" class="w-full h-full object-cover hidden"/>
+                        <span id="sidebar-avatar-placeholder" class="material-symbols-outlined text-2xl">person</span>
                     </div>
                     <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
@@ -319,7 +391,6 @@
                 </div>
             </div>
 
-            <!-- Pesquisa de Usuários -->
             <div class="px-3 py-2">
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
@@ -327,9 +398,7 @@
                 </div>
             </div>
 
-            <!-- Lista Principal da Sidebar -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-                <!-- Sala Principal -->
                 <div>
                     <h3 class="px-1 text-[10px] font-bold uppercase tracking-wider text-outline/80 mb-1">Salas Públicas</h3>
                     <div id="btn-main-room" onclick="switchToMainGroup()" class="relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
@@ -346,19 +415,15 @@
                     </div>
                 </div>
 
-                <!-- Lista de Usuários Conectados / DMs -->
                 <div>
                     <div class="flex items-center justify-between px-1 mb-1.5">
                         <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Usuários Online</h3>
                         <span id="online-count-badge" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </div>
-                    <div id="online-users-list" class="space-y-1">
-                        <!-- Renderizado via JS -->
-                    </div>
+                    <div id="online-users-list" class="space-y-1"></div>
                 </div>
             </div>
 
-            <!-- Botão Logoff na Sidebar -->
             <div class="p-3 border-t border-white/30 bg-white/10">
                 <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors border border-red-200">
                     <span class="material-symbols-outlined text-sm">logout</span>
@@ -369,7 +434,6 @@
 
         <!-- Área Central de Mensagens -->
         <main class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
-            <!-- Header do Chat Atual -->
             <div class="bg-white/60 px-4 py-2 flex items-center justify-between border-b border-white/40 shadow-sm">
                 <div class="flex items-center gap-2">
                     <span id="chat-type-icon" class="material-symbols-outlined text-primary text-base">forum</span>
@@ -381,12 +445,8 @@
                 </span>
             </div>
 
-            <!-- Lista de Mensagens -->
-            <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" id="chat-messages">
-                <!-- Mensagens inseridas via JS -->
-            </div>
+            <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar chat-bg-cubes" id="chat-messages"></div>
 
-            <!-- Popover Emojis -->
             <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
                 <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
                 <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
@@ -402,7 +462,6 @@
                 <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
             </div>
 
-            <!-- Barra de Digitação e Ações -->
             <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
                 <div class="flex gap-2 mb-2">
                     <button onclick="sendNudge()" class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm">
@@ -436,31 +495,40 @@
 
 <script>
     // =======================================================
-    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR
+    // 1. ÁUDIOS E GERENCIAMENTO DE CONFIGURAÇÕES
     // =======================================================
     const SOUNDS = {
         message: new Audio('sounds/message.mp3'),
-        nudge: new Audio('sounds/nudge.mp3')
+        nudge: new Audio('sounds/nudge.mp3'),
+        online: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3') // Som leve de entrada online
     };
 
-    function playMessageSound() {
-        SOUNDS.message.currentTime = 0;
-        SOUNDS.message.play().catch(() => {});
-    }
+    let userSettings = {
+        soundsEnabled: true,
+        onlineSoundEnabled: true,
+        darkMode: false,
+        bgStyle: 'chat-bg-cubes',
+        uiScale: 'normal'
+    };
 
-    function playNudgeSound() {
-        SOUNDS.nudge.currentTime = 0;
-        SOUNDS.nudge.play().catch(() => {});
+    function playSound(type) {
+        if (!userSettings.soundsEnabled && type !== 'online') return;
+        if (type === 'online' && (!userSettings.soundsEnabled || !userSettings.onlineSoundEnabled)) return;
+
+        if (SOUNDS[type]) {
+            SOUNDS[type].currentTime = 0;
+            SOUNDS[type].play().catch(() => {});
+        }
     }
 
     // =======================================================
-    // 2. CONFIGURAÇÕES E ESTADO DO SUPABASE
+    // 2. SUPABASE & ESTADO GLOBAL
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbnNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentUser = ""; // Nome de exibição (Primeiro + Último Sobrenome)
+    let currentUser = "";
     let currentUserProfile = null;
     let mainGroup = "geral";
     let activeChatRoom = "geral";
@@ -473,7 +541,7 @@
     let presenceChannel = null;
 
     // =======================================================
-    // 3. SESSÃO, AUTENTICAÇÃO E CADASTRO
+    // 3. SESSÃO & AUTENTICAÇÃO
     // =======================================================
     function checkSession() {
         const savedUser = localStorage.getItem("chat_user");
@@ -523,33 +591,19 @@
 
         const firstName = fullName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
         const dateParts = birthDate.split('-');
-        const day = dateParts[2];
-        const month = dateParts[1];
-        const yearShort = dateParts[0].slice(-2);
-
-        let generatedCode = `${firstName}${day}${month}${yearShort}`;
+        let generatedCode = `${firstName}${dateParts[2]}${dateParts[1]}${dateParts[0].slice(-2)}`;
         const displayName = formatDisplayName(fullName);
 
         try {
-            const { data: existing } = await _supabase
-                .from('profiles')
-                .select('codigo_acesso')
-                .eq('codigo_acesso', generatedCode);
+            const { data: existing } = await _supabase.from('profiles').select('codigo_acesso').eq('codigo_acesso', generatedCode);
+            if (existing && existing.length > 0) generatedCode += Math.floor(10 + Math.random() * 90);
 
-            if (existing && existing.length > 0) {
-                generatedCode += Math.floor(10 + Math.random() * 90);
-            }
-
-            const { data, error } = await _supabase
-                .from('profiles')
-                .insert([{
-                    codigo_acesso: generatedCode,
-                    nome_completo: fullName,
-                    nome_exibicao: displayName,
-                    data_nascimento: birthDate
-                }])
-                .select()
-                .single();
+            const { data, error } = await _supabase.from('profiles').insert([{
+                codigo_acesso: generatedCode,
+                nome_completo: fullName,
+                nome_exibicao: displayName,
+                data_nascimento: birthDate
+            }]).select().single();
 
             if (error) throw error;
 
@@ -557,17 +611,15 @@
             document.getElementById('registerForm').classList.add('hidden');
             document.getElementById('generatedCodeDisplay').textContent = generatedCode;
             document.getElementById('codeSuccessBox').classList.remove('hidden');
-
         } catch (err) {
-            errorEl.textContent = err.message || 'Erro ao criar conta. Certifique-se de que a tabela profiles foi criada.';
+            errorEl.textContent = err.message;
             errorEl.classList.remove('hidden');
         }
     }
 
     function copyCode() {
-        const code = document.getElementById('generatedCodeDisplay').textContent;
-        navigator.clipboard.writeText(code);
-        alert('Código de Acesso copiado!');
+        navigator.clipboard.writeText(document.getElementById('generatedCodeDisplay').textContent);
+        alert('Código copiado!');
     }
 
     function enterChatWithNewUser() {
@@ -586,15 +638,8 @@
         const codeInput = document.getElementById("login-code-input").value.trim().toLowerCase();
 
         try {
-            const { data, error } = await _supabase
-                .from('profiles')
-                .select('*')
-                .eq('codigo_acesso', codeInput)
-                .single();
-
-            if (error || !data) {
-                throw new Error('Código de acesso inválido ou não encontrado.');
-            }
+            const { data, error } = await _supabase.from('profiles').select('*').eq('codigo_acesso', codeInput).single();
+            if (error || !data) throw new Error('Código de acesso não encontrado.');
 
             currentUserProfile = data;
             currentUser = currentUserProfile.nome_exibicao;
@@ -602,7 +647,6 @@
             
             document.getElementById("login-modal").classList.add("hidden");
             startChat();
-
         } catch (err) {
             errorEl.textContent = err.message;
             errorEl.classList.remove('hidden');
@@ -621,18 +665,122 @@
         document.getElementById("sidebar-user-name").innerText = `@${currentUser}`;
         document.getElementById("sidebar-group-name").innerText = `Sala: ${mainGroup}`;
 
+        updateUserAvatarUI(currentUserProfile.avatar_url);
         updateChatHeaderUI();
         fetchMessages();
         setupRealtimeEngine();
     }
 
     // =======================================================
-    // 4. REALTIME ENGINE & NOTIFICAÇÕES
+    // 4. UPLOAD DE FOTO DE PERFIL LOCAL
+    // =======================================================
+    async function uploadAvatarFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `avatar_${currentUserProfile.id}_${Date.now()}.${fileExt}`;
+
+        try {
+            // Upload para o bucket 'avatars'
+            const { data: uploadData, error: uploadError } = await _supabase
+                .storage
+                .from('avatars')
+                .upload(fileName, file, { upsert: true });
+
+            if (uploadError) throw uploadError;
+
+            // Obter URL Pública da imagem
+            const { data: publicUrlData } = _supabase
+                .storage
+                .from('avatars')
+                .getPublicUrl(fileName);
+
+            const publicUrl = publicUrlData.publicUrl;
+
+            // Atualizar no banco
+            const { error: updateError } = await _supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', currentUserProfile.id);
+
+            if (updateError) throw updateError;
+
+            // Atualizar estado e UI local
+            currentUserProfile.avatar_url = publicUrl;
+            localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
+            updateUserAvatarUI(publicUrl);
+            alert('Foto de perfil atualizada com sucesso!');
+
+        } catch (err) {
+            alert('Erro ao enviar foto: ' + err.message);
+        }
+    }
+
+    function updateUserAvatarUI(url) {
+        const headerImg = document.getElementById("header-avatar-img");
+        const headerPlaceholder = document.getElementById("header-avatar-placeholder");
+        const sidebarImg = document.getElementById("sidebar-avatar-img");
+        const sidebarPlaceholder = document.getElementById("sidebar-avatar-placeholder");
+        const settingsImg = document.getElementById("settings-avatar-preview");
+        const settingsPlaceholder = document.getElementById("settings-avatar-placeholder");
+
+        if (url) {
+            headerImg.src = url; headerImg.classList.remove("hidden"); headerPlaceholder.classList.add("hidden");
+            sidebarImg.src = url; sidebarImg.classList.remove("hidden"); sidebarPlaceholder.classList.add("hidden");
+            settingsImg.src = url; settingsImg.classList.remove("hidden"); settingsPlaceholder.classList.add("hidden");
+        }
+    }
+
+    // =======================================================
+    // 5. MODAL DE CONFIGURAÇÕES & APARÊNCIA
+    // =======================================================
+    function openSettingsModal() {
+        document.getElementById("settings-modal").classList.remove("hidden");
+    }
+
+    function closeSettingsModal() {
+        document.getElementById("settings-modal").classList.add("hidden");
+    }
+
+    function toggleDarkMode(isDark) {
+        userSettings.darkMode = isDark;
+        if (isDark) {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
+        }
+    }
+
+    function changeChatBackground(bgClass) {
+        userSettings.bgStyle = bgClass;
+        const chatContainer = document.getElementById("chat-messages");
+        chatContainer.className = `flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar ${bgClass}`;
+    }
+
+    function changeUIScale(scale) {
+        userSettings.uiScale = scale;
+        const appWindow = document.getElementById("app-window");
+        if (scale === 'large') {
+            appWindow.style.transform = "scale(1.05)";
+        } else {
+            appWindow.style.transform = "scale(1)";
+        }
+    }
+
+    function toggleSoundMute(enabled) {
+        userSettings.soundsEnabled = enabled;
+    }
+
+    function toggleOnlineSound(enabled) {
+        userSettings.onlineSoundEnabled = enabled;
+    }
+
+    // =======================================================
+    // 6. REALTIME ENGINE & PRESENÇA
     // =======================================================
     function setupRealtimeEngine() {
-        if (presenceChannel) {
-            _supabase.removeChannel(presenceChannel);
-        }
+        if (presenceChannel) _supabase.removeChannel(presenceChannel);
 
         presenceChannel = _supabase.channel(`global-presence-${mainGroup}`, {
             config: { presence: { key: currentUser } }
@@ -641,17 +789,23 @@
         presenceChannel
             .on('presence', { event: 'sync' }, () => {
                 const state = presenceChannel.presenceState();
+                const previousCount = onlineUsersMap.size;
                 onlineUsersMap.clear();
 
                 Object.keys(state).forEach(key => {
-                    const presenceEntries = state[key];
-                    if (presenceEntries && presenceEntries.length > 0) {
-                        const userObj = presenceEntries[0];
+                    const entries = state[key];
+                    if (entries && entries.length > 0) {
+                        const userObj = entries[0];
                         if (userObj.username && userObj.username !== currentUser) {
                             onlineUsersMap.set(userObj.username, userObj);
                         }
                     }
                 });
+
+                if (onlineUsersMap.size > previousCount && !isInitialLoad) {
+                    playSound('online');
+                }
+
                 renderOnlineUsersList();
             })
             .on('broadcast', { event: 'typing' }, payload => {
@@ -659,29 +813,22 @@
                     showTypingIndicator(payload.payload.username);
                 }
             })
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'mensagens'
-            }, payload => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
                 if (isInitialLoad) return;
-
                 const newMsg = payload.new;
-                const msgRoom = newMsg.grupo;
 
-                if (msgRoom === activeChatRoom) {
+                if (newMsg.grupo === activeChatRoom) {
                     renderMessage(newMsg, true);
-                } else {
-                    if (newMsg.usuario !== currentUser) {
-                        incrementUnread(msgRoom);
-                        playMessageSound();
-                    }
+                } else if (newMsg.usuario !== currentUser) {
+                    incrementUnread(newMsg.grupo);
+                    playSound('message');
                 }
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     await presenceChannel.track({
                         username: currentUser,
+                        avatarUrl: currentUserProfile.avatar_url,
                         onlineAt: new Date().toISOString()
                     });
                 }
@@ -689,8 +836,7 @@
     }
 
     function incrementUnread(roomName) {
-        const current = unreadCounts.get(roomName) || 0;
-        unreadCounts.set(roomName, current + 1);
+        unreadCounts.set(roomName, (unreadCounts.get(roomName) || 0) + 1);
         updateUnreadBadgesUI();
     }
 
@@ -700,16 +846,14 @@
     }
 
     function updateUnreadBadgesUI() {
-        const mainGroupUnreadBadge = document.getElementById("unread-main-group");
-        const mainGroupCount = unreadCounts.get(mainGroup) || 0;
-
-        if (mainGroupCount > 0) {
-            mainGroupUnreadBadge.innerText = mainGroupCount;
-            mainGroupUnreadBadge.classList.remove("hidden");
+        const badge = document.getElementById("unread-main-group");
+        const count = unreadCounts.get(mainGroup) || 0;
+        if (count > 0) {
+            badge.innerText = count;
+            badge.classList.remove("hidden");
         } else {
-            mainGroupUnreadBadge.classList.add("hidden");
+            badge.classList.add("hidden");
         }
-
         renderOnlineUsersList();
     }
 
@@ -729,25 +873,20 @@
         indicator.classList.remove("hidden");
 
         if (typingTimeout) clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-            indicator.classList.add("hidden");
-        }, 2500);
+        typingTimeout = setTimeout(() => indicator.classList.add("hidden"), 2500);
     }
 
     // =======================================================
-    // 5. NAVEGAÇÃO DE SALAS
+    // 7. CHAT E RENDERIZAÇÃO
     // =======================================================
     function getDMRoomName(userA, userB) {
-        const sorted = [userA, userB].sort();
-        return `dm_${sorted[0]}_${sorted[1]}`;
+        return `dm_${[userA, userB].sort().join('_')}`;
     }
 
     function startPrivateChat(targetUsername) {
         if (targetUsername === currentUser) return;
-
         activeDMTargetUser = targetUsername;
         activeChatRoom = getDMRoomName(currentUser, targetUsername);
-        
         clearUnread(activeChatRoom);
         updateChatHeaderUI();
         fetchMessages();
@@ -757,7 +896,6 @@
     function switchToMainGroup() {
         activeDMTargetUser = null;
         activeChatRoom = mainGroup;
-
         clearUnread(mainGroup);
         updateChatHeaderUI();
         fetchMessages();
@@ -766,47 +904,23 @@
 
     function updateChatHeaderUI() {
         const isPrivate = activeDMTargetUser !== null;
-        const mainBtn = document.getElementById("btn-main-room");
-        const privateBadge = document.getElementById("private-badge");
-        const headerTitle = document.getElementById("header-chat-title");
-        const headerSub = document.getElementById("header-sub-info");
-        const chatTypeIcon = document.getElementById("chat-type-icon");
-        const currentChatTitleHeader = document.getElementById("current-chat-title-header");
-
-        if (isPrivate) {
-            headerTitle.innerText = `@${activeDMTargetUser}`;
-            headerSub.innerText = "Conversa Privada (DM)";
-            privateBadge.classList.remove("hidden");
-            chatTypeIcon.innerText = "lock";
-            currentChatTitleHeader.innerText = `Mensagens com @${activeDMTargetUser}`;
-            
-            mainBtn.className = "relative flex items-center justify-between p-2 rounded-xl bg-white/50 text-on-surface hover:bg-white/80 font-bold text-xs shadow-sm cursor-pointer transition-all";
-        } else {
-            headerTitle.innerText = `Sala: ${mainGroup}`;
-            headerSub.innerText = "Grupo Público";
-            privateBadge.classList.add("hidden");
-            chatTypeIcon.innerText = "forum";
-            currentChatTitleHeader.innerText = "Histórico de Mensagens";
-
-            mainBtn.className = "relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all";
-        }
+        document.getElementById("private-badge").classList.toggle("hidden", !isPrivate);
+        document.getElementById("header-chat-title").innerText = isPrivate ? `@${activeDMTargetUser}` : `Sala: ${mainGroup}`;
+        document.getElementById("header-sub-info").innerText = isPrivate ? "Conversa Privada" : "Grupo Público";
+        document.getElementById("chat-type-icon").innerText = isPrivate ? "lock" : "forum";
     }
 
-    // =======================================================
-    // 6. RENDERIZAÇÃO DA LISTA DE USUÁRIOS
-    // =======================================================
     function renderOnlineUsersList() {
         const container = document.getElementById("online-users-list");
         const badge = document.getElementById("online-count-badge");
         const filterText = document.getElementById("search-users-input").value.toLowerCase();
 
         container.innerHTML = "";
-        
         const onlineUsersArray = Array.from(onlineUsersMap.keys());
         badge.innerText = onlineUsersArray.length;
 
         if (onlineUsersArray.length === 0) {
-            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum outro usuário online no momento.</p>`;
+            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum outro usuário online.</p>`;
             return;
         }
 
@@ -814,111 +928,65 @@
             if (filterText && !username.toLowerCase().includes(filterText)) return;
 
             const isCurrentDM = activeDMTargetUser === username;
-            const dmRoomName = getDMRoomName(currentUser, username);
-            const unreadCount = unreadCounts.get(dmRoomName) || 0;
+            const dmRoom = getDMRoomName(currentUser, username);
+            const unread = unreadCounts.get(dmRoom) || 0;
+            const userData = onlineUsersMap.get(username);
 
             const item = document.createElement("div");
             item.onclick = () => startPrivateChat(username);
             item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                isCurrentDM 
-                    ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' 
-                    : 'hover:bg-white/60 text-on-surface border border-transparent'
+                isCurrentDM ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' : 'hover:bg-white/60 text-on-surface'
             }`;
 
             item.innerHTML = `
                 <div class="flex items-center gap-2 overflow-hidden">
                     <div class="relative flex-shrink-0">
-                        <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
-                            <span class="material-symbols-outlined text-sm">person</span>
+                        <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold overflow-hidden">
+                            ${userData && userData.avatarUrl ? `<img src="${userData.avatarUrl}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
                         </div>
                         <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
                     </div>
                     <span class="truncate">@${escapeHtml(username)}</span>
                 </div>
-                <div class="flex items-center gap-1">
-                    ${unreadCount > 0 ? `
-                        <span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">
-                            ${unreadCount}
-                        </span>
-                    ` : `
-                        <span class="material-symbols-outlined text-sm opacity-60">chat</span>
-                    `}
-                </div>
+                <div>${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>` : `<span class="material-symbols-outlined text-sm opacity-60">chat</span>`}</div>
             `;
-
             container.appendChild(item);
         });
     }
 
-    function filterUserList() {
-        renderOnlineUsersList();
-    }
+    function filterUserList() { renderOnlineUsersList(); }
 
-    // =======================================================
-    // 7. MENSAGENS COM HORÁRIO E PRÉ-VISUALIZAÇÕES DE MÍDIA
-    // =======================================================
     const chatContainer = document.getElementById("chat-messages");
-
-    function getFormattedTime(dateString) {
-        const date = dateString ? new Date(dateString) : new Date();
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
 
     function renderMessage(msg, isRealtime = false) {
         const isMe = msg.usuario === currentUser;
-        const timeFormatted = getFormattedTime(msg.created_at);
+        const timeFormatted = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
         if (msg.texto === "__NUDGE__") {
             const nudgeDiv = document.createElement("div");
             nudgeDiv.className = "flex justify-center my-2";
-            nudgeDiv.innerHTML = `
-                <div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold">
-                    <span class="material-symbols-outlined text-base">notifications_active</span>
-                    <span>${escapeHtml(msg.usuario)} chamou a atenção de todos!</span>
-                </div>
-            `;
+            nudgeDiv.innerHTML = `<div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-base">notifications_active</span><span>${escapeHtml(msg.usuario)} chamou a atenção!</span></div>`;
             chatContainer.appendChild(nudgeDiv);
             scrollToBottom();
-
-            if (isRealtime && !isMe) {
-                triggerNudgeEffect();
-            }
+            if (isRealtime && !isMe) triggerNudgeEffect();
             return;
         }
 
-        if (isRealtime && !isMe) {
-            playMessageSound();
-        }
+        if (isRealtime && !isMe) playSound('message');
 
         const msgWrapper = document.createElement("div");
         msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
 
-        const bubbleClass = isMe 
-            ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' 
-            : 'message-bubble-incoming rounded-2xl rounded-tl-none';
-
         msgWrapper.innerHTML = `
-            ${!isMe ? `
-                <div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1">
-                    <span class="material-symbols-outlined text-base">person</span>
-                </div>
-            ` : ''}
+            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
                 <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
-                <div class="${bubbleClass} px-3.5 py-2 text-sm text-on-surface relative group">
-                    <div class="pr-12 pb-1">
-                        ${formatMessageContent(msg.texto)}
-                    </div>
-                    <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">
-                        ${timeFormatted}
-                    </span>
+                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group">
+                    <div class="pr-12 pb-1">${formatMessageContent(msg.texto)}</div>
+                    <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
                 </div>
             </div>
-            ${isMe ? `
-                <div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm">
-                    <span class="material-symbols-outlined text-base">person</span>
-                </div>
-            ` : ''}
+            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
@@ -928,68 +996,18 @@
     function formatMessageContent(texto) {
         if (texto.startsWith("[IMAGEM]:")) {
             const imgData = texto.replace("[IMAGEM]:", "");
-            return `
-                <div class="space-y-1">
-                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">image</span> Imagem Anexada
-                    </div>
-                    <img src="${imgData}" onclick="openImageModal('${imgData}')" class="max-w-[220px] max-h-[180px] rounded-xl object-cover border border-white/60 shadow-sm cursor-pointer hover:scale-105 transition-transform"/>
-                </div>
-            `;
+            return `<img src="${imgData}" onclick="openImageModal('${imgData}')" class="max-w-[220px] max-h-[180px] rounded-xl object-cover border border-white/60 shadow-sm cursor-pointer hover:scale-105 transition-transform"/>`;
         }
-
         if (texto.startsWith("[VIDEO]:")) {
-            const videoData = texto.replace("[VIDEO]:", "");
-            return `
-                <div class="space-y-1">
-                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">movie</span> Vídeo Anexado
-                    </div>
-                    <video controls class="max-w-[240px] max-h-[180px] rounded-xl border border-white/60 shadow-sm bg-black">
-                        <source src="${videoData}" type="video/mp4">
-                        Seu navegador não suporta reprodução de vídeos.
-                    </video>
-                </div>
-            `;
+            return `<video controls class="max-w-[240px] max-h-[180px] rounded-xl border border-white/60 shadow-sm bg-black"><source src="${texto.replace("[VIDEO]:", "")}"></video>`;
         }
-
         if (texto.startsWith("[AUDIO]:")) {
-            const audioData = texto.replace("[AUDIO]:", "");
-            return `
-                <div class="space-y-1">
-                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-xs">audiotrack</span> Áudio Anexado
-                    </div>
-                    <audio controls class="max-w-[240px] h-10 rounded-lg">
-                        <source src="${audioData}">
-                        Seu navegador não suporta este áudio.
-                    </audio>
-                </div>
-            `;
+            return `<audio controls class="max-w-[240px] h-10 rounded-lg"><source src="${texto.replace("[AUDIO]:", "")}"></audio>`;
         }
-
         if (texto.startsWith("[ARQUIVO]:")) {
-            const rawData = texto.replace("[ARQUIVO]:", "");
-            const parts = rawData.split("|");
-            const fileName = parts[0] || "arquivo";
-            const fileData = parts[1] || "#";
-
-            return `
-                <div class="flex items-center gap-3 p-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
-                    <div class="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary flex-shrink-0">
-                        <span class="material-symbols-outlined text-xl">description</span>
-                    </div>
-                    <div class="flex flex-col overflow-hidden max-w-[160px]">
-                        <span class="text-xs font-bold text-on-surface truncate" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
-                        <span class="text-[10px] text-outline">Documento</span>
-                    </div>
-                    <a href="${fileData}" download="${escapeHtml(fileName)}" target="_blank" class="p-1.5 bg-primary text-white rounded-lg hover:bg-primary-container transition-colors shadow-sm ml-1" title="Baixar/Abrir">
-                        <span class="material-symbols-outlined text-sm">download</span>
-                    </a>
-                </div>
-            `;
+            const parts = texto.replace("[ARQUIVO]:", "").split("|");
+            return `<div class="flex items-center gap-3 p-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm"><div class="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-xl">description</span></div><div class="flex flex-col overflow-hidden max-w-[160px]"><span class="text-xs font-bold text-on-surface truncate">${escapeHtml(parts[0])}</span></div><a href="${parts[1]}" download="${escapeHtml(parts[0])}" target="_blank" class="p-1.5 bg-primary text-white rounded-lg shadow-sm"><span class="material-symbols-outlined text-sm">download</span></a></div>`;
         }
-
         return escapeHtml(texto);
     }
 
@@ -998,21 +1016,13 @@
         if (!file) return;
 
         const reader = new FileReader();
-
         reader.onload = function(e) {
-            const fileDataBase64 = e.target.result;
-
-            if (file.type.startsWith("image/")) {
-                sendMessage(`[IMAGEM]:${fileDataBase64}`);
-            } else if (file.type.startsWith("video/")) {
-                sendMessage(`[VIDEO]:${fileDataBase64}`);
-            } else if (file.type.startsWith("audio/")) {
-                sendMessage(`[AUDIO]:${fileDataBase64}`);
-            } else {
-                sendMessage(`[ARQUIVO]:${file.name}|${fileDataBase64}`);
-            }
+            const data = e.target.result;
+            if (file.type.startsWith("image/")) sendMessage(`[IMAGEM]:${data}`);
+            else if (file.type.startsWith("video/")) sendMessage(`[VIDEO]:${data}`);
+            else if (file.type.startsWith("audio/")) sendMessage(`[AUDIO]:${data}`);
+            else sendMessage(`[ARQUIVO]:${file.name}|${data}`);
         };
-
         reader.readAsDataURL(file);
         event.target.value = "";
     }
@@ -1027,32 +1037,14 @@
     }
 
     function triggerNudgeEffect() {
-        playNudgeSound();
+        playSound('nudge');
         chatContainer.classList.add('nudge-alert');
-        
-        const flash = document.createElement('div');
-        flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
-        document.body.appendChild(flash);
-
-        setTimeout(() => {
-            chatContainer.classList.remove('nudge-alert');
-            flash.style.opacity = '0';
-            setTimeout(() => flash.remove(), 300);
-        }, 500);
+        setTimeout(() => chatContainer.classList.remove('nudge-alert'), 500);
     }
 
-    function escapeHtml(str) {
-        return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
-    }
-
-    function scrollToBottom() {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-
-    function toggleEmojiPopover() {
-        document.getElementById("emoji-popover").classList.toggle("hidden");
-    }
-
+    function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
+    function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
+    function toggleEmojiPopover() { document.getElementById("emoji-popover").classList.toggle("hidden"); }
     function insertEmoji(emoji) {
         const input = document.getElementById("message-input");
         input.value += emoji;
@@ -1060,25 +1052,10 @@
         input.focus();
     }
 
-    // =======================================================
-    // 8. COMUNICAÇÃO COM SUPABASE
-    // =======================================================
     async function fetchMessages() {
         isInitialLoad = true;
         chatContainer.innerHTML = "";
-
-        const { data, error } = await _supabase
-            .from("mensagens")
-            .select("*")
-            .eq("grupo", activeChatRoom)
-            .order("id", { ascending: true });
-
-        if (error) {
-            console.warn("Aviso ao buscar mensagens:", error.message);
-            isInitialLoad = false;
-            return;
-        }
-
+        const { data } = await _supabase.from("mensagens").select("*").eq("grupo", activeChatRoom).order("id", { ascending: true });
         if (data) data.forEach(msg => renderMessage(msg, false));
         isInitialLoad = false;
     }
@@ -1086,37 +1063,18 @@
     async function sendMessage(textToSend = null) {
         const input = document.getElementById("message-input");
         const texto = textToSend || input.value.trim();
-        
         if (!texto) return;
-
         if (!textToSend) input.value = "";
 
-        const payload = { 
-            usuario: currentUser, 
-            texto: texto, 
-            grupo: activeChatRoom
-        };
-
+        const payload = { usuario: currentUser, texto: texto, grupo: activeChatRoom };
         const { error } = await _supabase.from("mensagens").insert([payload]);
-
-        if (error) {
-            console.warn("Aviso Supabase ao enviar. Exibindo localmente:", error.message);
-            renderMessage(payload, true);
-        }
+        if (error) renderMessage(payload, true);
     }
 
     async function sendNudge() {
-        const payload = { 
-            usuario: currentUser, 
-            texto: "__NUDGE__", 
-            grupo: activeChatRoom
-        };
-
+        const payload = { usuario: currentUser, texto: "__NUDGE__", grupo: activeChatRoom };
         const { error } = await _supabase.from("mensagens").insert([payload]);
-
-        if (error) {
-            renderMessage(payload, true);
-        }
+        if (error) renderMessage(payload, true);
     }
 
     document.getElementById("message-input").addEventListener("keypress", (e) => {
