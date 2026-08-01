@@ -148,6 +148,11 @@
             border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
+
+        .emoji-popover {
+            transform-origin: bottom right;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
     </style>
 </head>
 <body class="p-4">
@@ -170,6 +175,11 @@
             <input id="login-group" type="text" placeholder="Ex: geral" value="geral" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
         </div>
 
+        <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">URL da Foto de Perfil (Opcional)</label>
+            <input id="login-avatar" type="url" placeholder="Deixe em branco para avatar neutro sem gênero" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+        </div>
+
         <button onclick="handleLogin()" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
             <span>Conectar</span>
             <span class="material-symbols-outlined text-sm">login</span>
@@ -177,33 +187,41 @@
     </div>
 </div>
 
-<!-- MODAL DE PERFIL / ALTERAR FOTO DO COMPUTADOR -->
+<!-- MODAL DE EDIÇÃO DE PERFIL -->
 <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md hidden">
-    <div class="glass-window p-6 rounded-2xl w-full max-w-sm shadow-2xl flex flex-col gap-4">
-        <div class="flex justify-between items-center border-b border-white/40 pb-2">
-            <h3 class="font-bold text-primary text-base">Editar Foto de Perfil</h3>
-            <button onclick="toggleProfileModal()" class="text-outline hover:text-red-500">
-                <span class="material-symbols-outlined text-sm">close</span>
+    <div class="glass-window p-6 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+        <div class="flex items-center justify-between border-b border-white/40 pb-2">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">manage_accounts</span>
+                <h3 class="text-lg font-bold text-primary">Editar Perfil</h3>
+            </div>
+            <button onclick="closeProfileModal()" class="text-outline hover:text-on-surface">
+                <span class="material-symbols-outlined text-lg">close</span>
             </button>
         </div>
 
-        <div class="flex flex-col items-center gap-3">
-            <img id="preview-avatar-img" class="w-20 h-20 rounded-full object-cover border-2 border-white shadow" src="" alt="Avatar"/>
-            
-            <label class="gel-button px-4 py-2 rounded-xl text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow">
-                <span class="material-symbols-outlined text-sm">upload</span>
-                <span>Escolher foto do dispositivo</span>
-                <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)"/>
-            </label>
-
-            <button onclick="resetAvatarToDefault()" class="text-xs text-red-600 hover:underline mt-1 font-semibold">
-                Remover foto (usar avatar neutro)
-            </button>
+        <div class="flex flex-col items-center gap-2 my-1">
+            <div class="w-20 h-20 rounded-full border-2 border-primary/50 overflow-hidden shadow-md bg-white/50">
+                <img id="modal-avatar-preview" src="" alt="Preview Avatar" class="w-full h-full object-cover"/>
+            </div>
+            <span class="text-xs text-on-surface-variant text-center">Cole um link de foto ou escolha o avatar padrão sem gênero.</span>
         </div>
 
-        <button onclick="toggleProfileModal()" class="w-full py-2 bg-white/80 hover:bg-white text-on-surface text-xs font-bold rounded-xl border border-white shadow-sm mt-2">
-            Concluído
-        </button>
+        <div>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">URL da Foto de Perfil</label>
+            <input id="edit-avatar-url" type="url" placeholder="https://exemplo.com/sua-foto.jpg" class="w-full px-4 py-2 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+        </div>
+
+        <div class="flex items-center gap-2 mt-2">
+            <button onclick="resetProfileAvatar()" class="flex-1 py-2 bg-white/80 hover:bg-white text-on-surface-variant text-xs font-bold rounded-xl border border-white transition-all shadow-sm flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm">person_off</span>
+                <span>Usar Neutro</span>
+            </button>
+            <button onclick="saveProfileChanges()" class="flex-1 gel-button py-2 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-sm relative z-10">check</span>
+                <span class="relative z-10">Salvar Foto</span>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -218,15 +236,18 @@
         </div>
         
         <div class="flex items-center gap-4 relative z-20">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="toggleProfileModal()" title="Clique para alterar foto">
+            <!-- Perfil Clicável para Edição -->
+            <button onclick="openProfileModal()" title="Editar Foto de Perfil" class="flex items-center gap-3 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-xl transition-all border border-white/20">
                 <div class="flex flex-col items-end">
                     <span id="header-user-name" class="text-xs font-bold drop-shadow-sm">@usuario</span>
-                    <span class="text-[10px] opacity-90 drop-shadow-sm">(Editar Foto)</span>
+                    <span class="text-[10px] opacity-90 drop-shadow-sm flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Online
+                    </span>
                 </div>
-                <div class="w-9 h-9 rounded-full border-2 border-white/80 overflow-hidden shadow-sm bg-white/30 hover:scale-105 transition-transform">
-                    <img id="header-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar"/>
+                <div class="w-9 h-9 rounded-full border-2 border-white/80 overflow-hidden shadow-sm bg-white/30">
+                    <img id="header-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar" onerror="this.src=AVATAR_PADRAO"/>
                 </div>
-            </div>
+            </button>
             
             <button onclick="handleLogoff()" title="Sair da Conta" class="flex items-center gap-1 px-3 py-1 bg-red-500/80 hover:bg-red-600/90 text-white text-xs font-bold rounded-lg backdrop-blur-sm transition-all shadow-sm">
                 <span class="material-symbols-outlined text-sm">logout</span>
@@ -239,16 +260,18 @@
         <!-- Sidebar Esquerda -->
         <aside class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
             <!-- Perfil Local -->
-            <div class="p-4 flex items-center gap-3 border-b border-white/30 cursor-pointer hover:bg-white/20 transition-colors" onclick="toggleProfileModal()">
+            <div class="p-4 flex items-center gap-3 border-b border-white/30 cursor-pointer hover:bg-white/20 transition-all" onclick="openProfileModal()" title="Clique para alterar avatar">
                 <div class="relative">
                     <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/70 shadow-sm bg-white/40">
-                        <img id="sidebar-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar"/>
+                        <img id="sidebar-avatar-img" class="w-full h-full object-cover" src="" alt="Avatar" onerror="this.src=AVATAR_PADRAO"/>
                     </div>
                     <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 <div class="flex flex-col overflow-hidden">
                     <span id="sidebar-user-name" class="text-sm font-bold text-on-surface truncate">@usuario</span>
-                    <span class="text-xs text-primary font-semibold truncate hover:underline">Alterar Foto</span>
+                    <span class="text-xs text-on-surface-variant italic opacity-80 truncate flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">edit</span> Editar Perfil
+                    </span>
                 </div>
             </div>
 
@@ -299,23 +322,22 @@
             </div>
 
             <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" id="chat-messages">
-                <!-- Mensagens inseridas via JS -->
+                <!-- As mensagens entram dinamicamente via JS -->
             </div>
 
-            <!-- Popover de Emojis -->
-            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
-                <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
-                <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
-                <button onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1 rounded text-lg">😍</button>
-                <button onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1 rounded text-lg">😎</button>
-                <button onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1 rounded text-lg">👍</button>
-                <button onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1 rounded text-lg">🔥</button>
-                <button onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1 rounded text-lg">🎉</button>
-                <button onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1 rounded text-lg">❤️</button>
-                <button onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1 rounded text-lg">🙏</button>
-                <button onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1 rounded text-lg">🤔</button>
-                <button onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1 rounded text-lg">👋</button>
-                <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
+            <!-- PAINEL POPOVER DE EMOJIS -->
+            <div id="emoji-popover" class="emoji-popover hidden absolute bottom-20 right-20 z-40 w-72 bg-white/90 backdrop-blur-md border border-white/80 rounded-2xl shadow-2xl p-3">
+                <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-200/60">
+                    <span class="text-xs font-bold text-primary flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">sentiment_satisfied</span> Selecionar Emoji
+                    </span>
+                    <button onclick="toggleEmojiPicker()" class="text-outline hover:text-on-surface text-sm">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div id="emoji-grid" class="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto p-1 text-xl custom-scrollbar">
+                    <!-- Emojis preenchidos dinamicamente -->
+                </div>
             </div>
 
             <!-- Barra de Digitação e Ações -->
@@ -326,6 +348,7 @@
                         <span>Chamar Atenção</span>
                     </button>
                     
+                    <!-- Botão Anexo Funcional -->
                     <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
                         <span class="material-symbols-outlined text-sm">attach_file</span>
                         <span>Anexo</span>
@@ -335,9 +358,9 @@
                 
                 <div class="flex items-center gap-2">
                     <div class="flex-1 relative">
-                        <input id="message-input" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm" placeholder="Digite uma mensagem..." type="text"/>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/50">
-                            <span onclick="toggleEmojiPopover()" class="material-symbols-outlined cursor-pointer hover:text-primary select-none">sentiment_satisfied</span>
+                        <input id="message-input" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm pr-10" placeholder="Digite uma mensagem..." type="text"/>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/80 hover:text-primary">
+                            <span onclick="toggleEmojiPicker()" class="material-symbols-outlined cursor-pointer select-none">sentiment_satisfied</span>
                         </div>
                     </div>
                     <button onclick="sendMessage()" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md">
@@ -352,49 +375,74 @@
 
 <script>
     // =======================================================
-    // 1. ÁUDIO COM FALLBACK
+    // 1. AVATAR PADRÃO SEM GÊNERO & EMOJIS
     // =======================================================
-    const audioNudge = new Audio('nudge.mp3'); 
-    const audioMessage = new Audio('mensagem.mp3');
+    const AVATAR_PADRAO = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23717783"><path d="M12 2a5 5 0 100 10 5 5 0 000-10zM2 20a10 10 0 0120 0H2z"/></svg>`;
 
-    function playSound(audioObject) {
-        audioObject.currentTime = 0;
-        audioObject.play().catch(() => {
-            playBeepSound();
-        });
-    }
+    const EMOJI_LIST = [
+        '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
+        '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😋', '😛', '😜',
+        '🤪', '😎', '🥳', '😏', '😒', '😞', '🎉', '🔥', '❤️', '💖',
+        '👍', '👎', '👏', '🙌', '🚀', '✨', '⭐', '💡', '💬', '👀'
+    ];
 
-    function playBeepSound() {
+    // =======================================================
+    // 2. SONS COM AUDIO SINTÉTICO (Sem arquivos externos 404)
+    // =======================================================
+    function playSyntheticBeep(frequency = 587.33, duration = 0.2, type = 'sine') {
         try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const audioCtx = new AudioCtx();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
             osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = 587.33; 
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.connect(audioCtx.destination);
             osc.start();
-            osc.stop(ctx.currentTime + 0.15);
-        } catch(e){}
+            osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.warn("Áudio não suportado ou bloqueado pelo navegador", e);
+        }
+    }
+
+    function playSoundMessage() {
+        playSyntheticBeep(659.25, 0.15, 'sine'); // Som suave de mensagem (E5)
+    }
+
+    function playSoundNudge() {
+        playSyntheticBeep(880, 0.1, 'triangle'); // Som de atenção rápido duplo
+        setTimeout(() => playSyntheticBeep(1108.73, 0.2, 'triangle'), 100);
     }
 
     // =======================================================
-    // 2. SUPABASE & CONFIGS
+    // 3. CONFIGURAÇÃO SUPABASE
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Insera sua chave anon pública do Supabase
-    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Insira sua chave anon pública do Supabase aqui
+    
+    let _supabase = null;
+    let isSupabaseReady = false;
 
-    // Avatar Neutro Sem Gênero em Formato SVG Vetorial
-    const AVATAR_PADRAO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23717783'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm0 14c-2.03 0-3.8-.85-5.05-2.2.03-1.68 3.37-2.6 5.05-2.6s5.02.92 5.05 2.6C15.8 19.15 14.03 20 12 20z'/></svg>";
+    try {
+        if (SUPABASE_KEY && SUPABASE_KEY !== "SUA_CHAVE_ANON_AQUI") {
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            isSupabaseReady = true;
+        }
+    } catch(e) {
+        console.warn("Supabase não configurado. Entrando em modo simulado local.");
+    }
 
     let currentUser = "";
     let currentGroup = "geral";
-    let currentUserAvatar = AVATAR_PADRAO;
+    let currentUserAvatar = "";
     let isInitialLoad = true;
 
     // =======================================================
-    // 3. LOGIN & PERFIL
+    // 4. LOGIN, LOGOFF & EDICÃO DE PERFIL
     // =======================================================
     function checkSession() {
         const savedUser = localStorage.getItem("chat_username");
@@ -410,20 +458,23 @@
             document.getElementById("login-modal").classList.remove("hidden");
             document.getElementById("app-window").classList.add("hidden");
         }
+
+        renderEmojis();
     }
 
     function handleLogin() {
         const userInput = document.getElementById("login-username").value.trim();
         const groupInput = document.getElementById("login-group").value.trim();
+        const avatarInput = document.getElementById("login-avatar").value.trim();
 
         if (!userInput || !groupInput) {
-            alert("Por favor, informe seu Nome e a Sala.");
+            alert("Por favor, preencha o Usuário e a Sala.");
             return;
         }
 
         currentUser = userInput;
         currentGroup = groupInput.toLowerCase();
-        currentUserAvatar = AVATAR_PADRAO;
+        currentUserAvatar = avatarInput || AVATAR_PADRAO;
 
         localStorage.setItem("chat_username", currentUser);
         localStorage.setItem("chat_group", currentGroup);
@@ -433,40 +484,6 @@
         startChat();
     }
 
-    function toggleProfileModal() {
-        const modal = document.getElementById("profile-modal");
-        modal.classList.toggle("hidden");
-        if(!modal.classList.contains("hidden")) {
-            document.getElementById("preview-avatar-img").src = currentUserAvatar;
-        }
-    }
-
-    // Leitor do arquivo local escolhido do dispositivo
-    function handleAvatarUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentUserAvatar = e.target.result;
-                localStorage.setItem("chat_avatar", currentUserAvatar);
-                updateAvatarUI();
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function resetAvatarToDefault() {
-        currentUserAvatar = AVATAR_PADRAO;
-        localStorage.setItem("chat_avatar", currentUserAvatar);
-        updateAvatarUI();
-    }
-
-    function updateAvatarUI() {
-        document.getElementById("header-avatar-img").src = currentUserAvatar;
-        document.getElementById("sidebar-avatar-img").src = currentUserAvatar;
-        document.getElementById("preview-avatar-img").src = currentUserAvatar;
-    }
-
     function handleLogoff() {
         localStorage.removeItem("chat_username");
         localStorage.removeItem("chat_group");
@@ -474,34 +491,102 @@
         location.reload();
     }
 
+    function openProfileModal() {
+        document.getElementById("modal-avatar-preview").src = currentUserAvatar;
+        document.getElementById("edit-avatar-url").value = (currentUserAvatar === AVATAR_PADRAO) ? "" : currentUserAvatar;
+        document.getElementById("profile-modal").classList.remove("hidden");
+    }
+
+    function closeProfileModal() {
+        document.getElementById("profile-modal").classList.add("hidden");
+    }
+
+    function resetProfileAvatar() {
+        currentUserAvatar = AVATAR_PADRAO;
+        document.getElementById("modal-avatar-preview").src = AVATAR_PADRAO;
+        document.getElementById("edit-avatar-url").value = "";
+        saveProfileChanges();
+    }
+
+    function saveProfileChanges() {
+        const url = document.getElementById("edit-avatar-url").value.trim();
+        currentUserAvatar = url || AVATAR_PADRAO;
+        localStorage.setItem("chat_avatar", currentUserAvatar);
+        
+        document.getElementById("header-avatar-img").src = currentUserAvatar;
+        document.getElementById("sidebar-avatar-img").src = currentUserAvatar;
+        closeProfileModal();
+    }
+
     function startChat() {
         document.getElementById("app-window").classList.remove("hidden");
 
+        // Atualizar Dados na UI
         document.getElementById("header-user-name").innerText = `@${currentUser}`;
         document.getElementById("sidebar-user-name").innerText = `@${currentUser}`;
         document.getElementById("header-group-name").innerText = currentGroup;
         document.getElementById("sidebar-group-name").innerText = `Sala: ${currentGroup}`;
         
-        updateAvatarUI();
-        fetchMessages();
-        subscribeRealtime();
+        document.getElementById("header-avatar-img").src = currentUserAvatar;
+        document.getElementById("sidebar-avatar-img").src = currentUserAvatar;
+
+        if (isSupabaseReady) {
+            fetchMessages();
+            subscribeRealtime();
+        } else {
+            // Se Supabase não estiver ativo, simula boas-vindas local
+            renderMessage({
+                usuario: "Sistema",
+                texto: `Bem-vindo à sala ${currentGroup}! Você pode enviar mensagens normalmente.`,
+                avatar: AVATAR_PADRAO
+            }, false);
+        }
     }
 
     // =======================================================
-    // 4. MENSAGENS, EMOJI & EFEITOS
+    // 5. EMOJI PICKER
+    // =======================================================
+    function renderEmojis() {
+        const grid = document.getElementById("emoji-grid");
+        grid.innerHTML = "";
+        EMOJI_LIST.forEach(emoji => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "hover:bg-white/60 rounded-lg p-1 text-center transition cursor-pointer select-none";
+            btn.textContent = emoji;
+            btn.onclick = () => insertEmoji(emoji);
+            grid.appendChild(btn);
+        });
+    }
+
+    function toggleEmojiPicker() {
+        const popover = document.getElementById("emoji-popover");
+        popover.classList.toggle("hidden");
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById("message-input");
+        input.value += emoji;
+        input.focus();
+        toggleEmojiPicker();
+    }
+
+    // =======================================================
+    // 6. RENDERIZAÇÃO E NUDGE
     // =======================================================
     const chatContainer = document.getElementById("chat-messages");
 
     function renderMessage(msg, isRealtime = false) {
         const isMe = msg.usuario === currentUser;
 
+        // Trata o Chamar Atenção (Nudge)
         if (msg.texto === "__NUDGE__") {
             const nudgeDiv = document.createElement("div");
             nudgeDiv.className = "flex justify-center my-2";
             nudgeDiv.innerHTML = `
                 <div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold">
                     <span class="material-symbols-outlined text-base">notifications_active</span>
-                    <span>${msg.usuario} chamou a atenção de todos!</span>
+                    <span>${escapeHtml(msg.usuario)} chamou a atenção de todos!</span>
                 </div>
             `;
             chatContainer.appendChild(nudgeDiv);
@@ -509,31 +594,36 @@
 
             if (isRealtime && !isMe) {
                 triggerNudgeEffect();
+            } else if (isMe && isRealtime) {
+                triggerNudgeEffect(false); // apenas vibra sem flash total
             }
             return;
         }
 
+        // Toca som de mensagem regular se for em tempo real e enviada por outro usuário
         if (isRealtime && !isMe) {
-            playSound(audioMessage);
+            playSoundMessage();
         }
 
+        // Renderiza mensagem padrão ou anexo
         const msgWrapper = document.createElement("div");
         msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
 
         const avatarUrl = msg.avatar || AVATAR_PADRAO;
+
         const bubbleClass = isMe 
             ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' 
             : 'message-bubble-incoming rounded-2xl rounded-tl-none';
 
         msgWrapper.innerHTML = `
-            ${!isMe ? `<img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
+            ${!isMe ? `<img src="${avatarUrl}" onerror="this.src=AVATAR_PADRAO" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
-                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${msg.usuario}</span>
+                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
                 <div class="${bubbleClass} px-3 py-2 text-sm text-on-surface">
                     ${formatMessageBody(msg.texto)}
                 </div>
             </div>
-            ${isMe ? `<img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
+            ${isMe ? `<img src="${avatarUrl}" onerror="this.src=AVATAR_PADRAO" class="w-7 h-7 rounded-full object-cover border border-white shadow-sm mt-1"/>` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
@@ -553,19 +643,25 @@
         return escapeHtml(texto);
     }
 
-    function triggerNudgeEffect() {
-        playSound(audioNudge);
+    function triggerNudgeEffect(fullFlash = true) {
+        playSoundNudge();
         chatContainer.classList.add('nudge-alert');
         
-        const flash = document.createElement('div');
-        flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
-        document.body.appendChild(flash);
+        if (fullFlash) {
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
+            document.body.appendChild(flash);
 
-        setTimeout(() => {
-            chatContainer.classList.remove('nudge-alert');
-            flash.style.opacity = '0';
-            setTimeout(() => flash.remove(), 300);
-        }, 500);
+            setTimeout(() => {
+                chatContainer.classList.remove('nudge-alert');
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 300);
+            }, 500);
+        } else {
+            setTimeout(() => {
+                chatContainer.classList.remove('nudge-alert');
+            }, 500);
+        }
     }
 
     function escapeHtml(str) {
@@ -576,21 +672,11 @@
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    function toggleEmojiPopover() {
-        document.getElementById("emoji-popover").classList.toggle("hidden");
-    }
-
-    function insertEmoji(emoji) {
-        const input = document.getElementById("message-input");
-        input.value += emoji;
-        document.getElementById("emoji-popover").classList.add("hidden");
-        input.focus();
-    }
-
     // =======================================================
-    // 5. OPERAÇÕES DE MENSAGEM & SUPABASE
+    // 7. OPERAÇÕES DE MENSAGEM & SUPABASE (COM FALLBACK)
     // =======================================================
     async function fetchMessages() {
+        if (!isSupabaseReady) return;
         isInitialLoad = true;
         const { data, error } = await _supabase
             .from("mensagens")
@@ -599,12 +685,19 @@
             .order("id", { ascending: true });
 
         if (error) {
-            console.warn("Aviso Supabase ao buscar:", error.message);
+            console.error("Erro ao carregar mensagens do Supabase:", error);
+            // Tenta busca genérica se o filtro por grupo falhar
+            const backupReq = await _supabase.from("mensagens").select("*").order("id", { ascending: true });
+            if (backupReq.data) {
+                chatContainer.innerHTML = "";
+                backupReq.data.forEach(msg => renderMessage(msg, false));
+            }
+            isInitialLoad = false;
             return;
         }
 
         chatContainer.innerHTML = "";
-        if (data) data.forEach(msg => renderMessage(msg, false));
+        data.forEach(msg => renderMessage(msg, false));
         isInitialLoad = false;
     }
 
@@ -616,33 +709,58 @@
 
         if (!textToSend) input.value = "";
 
-        const payload = { 
+        // Esconde emoji picker se aberto
+        document.getElementById("emoji-popover").classList.add("hidden");
+
+        const messageData = { 
             usuario: currentUser, 
             texto: texto, 
             grupo: currentGroup,
             avatar: currentUserAvatar 
         };
 
-        const { error } = await _supabase.from("mensagens").insert([payload]);
+        if (isSupabaseReady) {
+            let { error } = await _supabase
+                .from("mensagens")
+                .insert([messageData]);
 
-        if (error) {
-            console.warn("Aviso Supabase ao enviar. Exibindo localmente:", error.message);
-            renderMessage(payload, true);
+            if (error) {
+                console.warn("Falha no envio completo do payload Supabase. Tentando formato simplificado...", error);
+                
+                // Fallback 1: envia sem avatar caso a coluna avatar não exista no Supabase
+                const fallbackData = { usuario: currentUser, texto: texto, grupo: currentGroup };
+                let fallbackRes = await _supabase.from("mensagens").insert([fallbackData]);
+                
+                if (fallbackRes.error) {
+                    // Fallback 2: envia apenas usuario e texto (tabela legada)
+                    let simpleRes = await _supabase.from("mensagens").insert([{ usuario: currentUser, texto: texto }]);
+                    if (simpleRes.error) {
+                        alert("Erro no Supabase (400 Bad Request): Verifique se a tabela 'mensagens' possui as colunas 'grupo' e 'avatar' criadas no Supabase SQL Editor.");
+                    }
+                }
+            }
+        } else {
+            // Modo local simulado
+            renderMessage(messageData, true);
         }
     }
 
     async function sendNudge() {
-        const payload = { 
+        const messageData = { 
             usuario: currentUser, 
             texto: "__NUDGE__", 
             grupo: currentGroup,
             avatar: currentUserAvatar 
         };
 
-        const { error } = await _supabase.from("mensagens").insert([payload]);
+        if (isSupabaseReady) {
+            const { error } = await _supabase
+                .from("mensagens")
+                .insert([messageData]);
 
-        if (error) {
-            renderMessage(payload, true);
+            if (error) console.error("Erro ao enviar Nudge:", error);
+        } else {
+            renderMessage(messageData, true);
         }
     }
 
@@ -655,25 +773,30 @@
     }
 
     function subscribeRealtime() {
+        if (!isSupabaseReady) return;
         _supabase
             .channel(`sala-${currentGroup}`)
             .on('postgres_changes', { 
                 event: 'INSERT', 
                 schema: 'public', 
-                table: 'mensagens',
-                filter: `grupo=eq.${currentGroup}` 
+                table: 'mensagens'
             }, payload => {
-                if (!isInitialLoad) {
-                    renderMessage(payload.new, true);
+                if (!isInitialLoad && payload.new) {
+                    // Filtra apenas mensagens do grupo atual se existir a coluna grupo
+                    if (!payload.new.grupo || payload.new.grupo === currentGroup) {
+                        renderMessage(payload.new, true);
+                    }
                 }
             })
             .subscribe();
     }
 
+    // Event Listener Enter
     document.getElementById("message-input").addEventListener("keypress", (e) => {
         if (e.key === "Enter") sendMessage();
     });
 
+    // Startup
     window.onload = checkSession;
 </script>
 </body>
