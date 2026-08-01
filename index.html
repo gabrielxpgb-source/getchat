@@ -149,9 +149,41 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
 
-        .emoji-popover {
-            transform-origin: bottom right;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        /* Animação para indicador de digitação */
+        .dot-flashing {
+            position: relative;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #005dac;
+            color: #005dac;
+            animation: dotFlashing 1s infinite linear alternate;
+            animation-delay: .5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: '';
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            width: 6px;
+            height: 6px;
+            border-radius: 5px;
+            background-color: #005dac;
+            color: #005dac;
+        }
+        .dot-flashing::before {
+            left: -10px;
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 10px;
+            animation: dotFlashing 1s infinite alternate;
+            animation-delay: 1s;
+        }
+        @keyframes dotFlashing {
+            0% { background-color: #005dac; }
+            50%, 100% { background-color: rgba(0, 93, 172, 0.2); }
         }
     </style>
 </head>
@@ -171,7 +203,7 @@
         </div>
 
         <div>
-            <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome do Grupo / Sala</label>
+            <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome do Grupo / Sala Geral</label>
             <input id="login-group" type="text" placeholder="Ex: geral" value="geral" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
         </div>
 
@@ -182,27 +214,45 @@
     </div>
 </div>
 
+<!-- MODAL DE PREVISUALIZAÇÃO DE IMAGEM AMPLIADA -->
+<div id="image-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden" onclick="closeImageModal()">
+    <div class="relative max-w-[90vw] max-h-[90vh] p-2" onclick="event.stopPropagation()">
+        <img id="image-modal-img" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-white/40 object-contain"/>
+        <button onclick="closeImageModal()" class="absolute -top-4 -right-4 bg-red-600 text-white rounded-full p-1.5 shadow-lg hover:bg-red-700 transition-colors">
+            <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+    </div>
+</div>
+
 <!-- 2. JANELA PRINCIPAL DO CHAT -->
 <div id="app-window" class="glass-window w-full max-w-[1024px] h-[720px] rounded-xl flex flex-col overflow-hidden hidden">
     
     <!-- Header Superior -->
     <header class="glossy-header flex justify-between items-center w-full px-6 py-2 shadow-sm text-white z-10">
-        <div class="flex items-center gap-2 relative z-20">
-            <span class="material-symbols-outlined drop-shadow-md">forum</span>
-            <h1 class="text-lg font-bold drop-shadow-md">Sala: <span id="header-group-name">geral</span></h1>
+        <div class="flex items-center gap-3 relative z-20">
+            <span class="material-symbols-outlined drop-shadow-md text-2xl">forum</span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-base font-bold drop-shadow-md">
+                        <span id="header-chat-title">Sala: geral</span>
+                    </h1>
+                    <span id="private-badge" class="hidden bg-amber-400 text-amber-950 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">Privado</span>
+                </div>
+                <p id="header-sub-info" class="text-[11px] opacity-80">Grupo Público</p>
+            </div>
         </div>
         
         <div class="flex items-center gap-4 relative z-20">
-            <!-- Perfil Exibição -->
-            <div class="flex items-center gap-3 bg-white/10 px-3 py-1 rounded-xl border border-white/20">
+            <div class="flex items-center gap-3">
                 <div class="flex flex-col items-end">
                     <span id="header-user-name" class="text-xs font-bold drop-shadow-sm">@usuario</span>
-                    <span class="text-[10px] opacity-90 drop-shadow-sm flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span> Online
+                    <span class="text-[10px] text-green-300 font-semibold flex items-center gap-1">
+                        <span class="w-2 h-2 bg-green-400 rounded-full inline-block animate-pulse"></span>
+                        Online
                     </span>
                 </div>
-                <div class="w-8 h-8 rounded-full bg-white/20 border border-white/80 flex items-center justify-center text-white shadow-sm">
-                    <span class="material-symbols-outlined text-lg">person</span>
+                <div class="w-9 h-9 rounded-full border-2 border-white/80 overflow-hidden shadow-sm bg-white/30 flex items-center justify-center text-white">
+                    <span class="material-symbols-outlined text-xl">account_circle</span>
                 </div>
             </div>
             
@@ -217,52 +267,58 @@
         <!-- Sidebar Esquerda -->
         <aside class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
             <!-- Perfil Local -->
-            <div class="p-4 flex items-center gap-3 border-b border-white/30">
+            <div class="p-4 flex items-center gap-3 border-b border-white/30 bg-white/20">
                 <div class="relative">
-                    <div class="w-10 h-10 rounded-xl bg-primary/20 border border-white/70 shadow-sm flex items-center justify-center text-primary font-bold">
-                        <span class="material-symbols-outlined">person</span>
+                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-white/70 shadow-sm bg-primary/20 flex items-center justify-center text-primary">
+                        <span class="material-symbols-outlined text-2xl">person</span>
                     </div>
-                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                    <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 <div class="flex flex-col overflow-hidden">
                     <span id="sidebar-user-name" class="text-sm font-bold text-on-surface truncate">@usuario</span>
-                    <span class="text-[11px] text-on-surface-variant opacity-80 truncate">Conectado</span>
+                    <span class="text-[10px] text-outline font-medium">Sua conta</span>
                 </div>
             </div>
 
-            <!-- Abas -->
-            <div class="flex px-2 pt-2 gap-1">
-                <button class="flex-1 py-1 text-center text-xs font-bold bg-white/60 text-primary-container rounded-t-lg border-t border-x border-white/40">Contatos</button>
-                <button class="flex-1 py-1 text-center text-xs font-bold text-on-surface-variant opacity-70 hover:opacity-100">Recentes</button>
-            </div>
-
-            <!-- Pesquisa -->
-            <div class="px-2 py-2">
+            <!-- Pesquisa de Usuários -->
+            <div class="px-3 py-2">
                 <div class="relative">
-                    <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-                    <input class="w-full pl-8 pr-2 py-1 text-xs rounded-lg bg-white/50 border border-white/60 focus:outline-none backdrop-blur-sm" placeholder="Buscar..." type="text"/>
+                    <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
+                    <input id="search-users-input" oninput="filterUserList()" class="w-full pl-8 pr-2 py-1.5 text-xs rounded-xl bg-white/60 border border-white/70 focus:outline-none backdrop-blur-sm" placeholder="Buscar usuários online..." type="text"/>
                 </div>
             </div>
 
-            <!-- Lista de Conversas -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-2">
-                <div class="mb-4">
-                    <h3 class="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-outline/80">Sala Atual</h3>
-                    <div class="mt-1 flex items-center gap-2 p-2 rounded-lg bg-primary/10 border border-white/40 font-bold text-primary shadow-sm">
-                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white">
-                            <span class="material-symbols-outlined text-sm">groups</span>
+            <!-- Lista Principal da Sidebar -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+                <!-- Sala Principal -->
+                <div>
+                    <h3 class="px-1 text-[10px] font-bold uppercase tracking-wider text-outline/80 mb-1">Salas Públicas</h3>
+                    <div id="btn-main-room" onclick="switchToMainGroup()" class="flex items-center gap-2.5 p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
+                        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-base">groups</span>
                         </div>
                         <div class="flex flex-col overflow-hidden">
-                            <span id="sidebar-group-name" class="text-xs truncate">Sala: geral</span>
-                            <span class="text-[10px] opacity-70 font-normal">Grupo Público</span>
+                            <span id="sidebar-group-name" class="truncate">Sala: geral</span>
+                            <span class="text-[9px] font-normal opacity-80">Conversa Aberta</span>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Usuários Conectados / DMs -->
+                <div>
+                    <div class="flex items-center justify-between px-1 mb-1.5">
+                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Usuários Online</h3>
+                        <span id="online-count-badge" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+                    </div>
+                    <div id="online-users-list" class="space-y-1">
+                        <!-- Renderizado via Javascript -->
                     </div>
                 </div>
             </div>
 
             <!-- Botão Logoff na Sidebar -->
-            <div class="p-2 border-t border-white/30">
-                <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition-colors border border-red-200">
+            <div class="p-3 border-t border-white/30 bg-white/10">
+                <button onclick="handleLogoff()" class="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold rounded-xl flex items-center justify-center gap-1 transition-colors border border-red-200">
                     <span class="material-symbols-outlined text-sm">logout</span>
                     <span>Encerrar Sessão</span>
                 </button>
@@ -271,28 +327,37 @@
 
         <!-- Área Central das Mensagens -->
         <main class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
-            <div class="bg-white/60 px-4 py-2 flex items-center gap-2 border-b border-white/40 shadow-sm">
-                <span class="material-symbols-outlined text-amber-600 text-sm">campaign</span>
-                <h2 class="text-xs font-bold text-on-surface">Histórico de Mensagens</h2>
+            <!-- Header do Chat Atual -->
+            <div class="bg-white/60 px-4 py-2 flex items-center justify-between border-b border-white/40 shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span id="chat-type-icon" class="material-symbols-outlined text-primary text-base">forum</span>
+                    <h2 id="current-chat-title-header" class="text-xs font-bold text-on-surface">Histórico de Mensagens</h2>
+                </div>
+                <span id="typing-indicator" class="hidden text-xs text-primary font-medium flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                    <span id="typing-username">Alguém</span> está digitando
+                    <span class="dot-flashing ml-2 mr-1"></span>
+                </span>
             </div>
 
+            <!-- Lista de Mensagens -->
             <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" id="chat-messages">
-                <!-- As mensagens entram dinamicamente via JS -->
+                <!-- Mensagens inseridas via JS -->
             </div>
 
-            <!-- PAINEL POPOVER DE EMOJIS -->
-            <div id="emoji-popover" class="emoji-popover hidden absolute bottom-20 right-20 z-40 w-72 bg-white/90 backdrop-blur-md border border-white/80 rounded-2xl shadow-2xl p-3">
-                <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-200/60">
-                    <span class="text-xs font-bold text-primary flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">sentiment_satisfied</span> Selecionar Emoji
-                    </span>
-                    <button onclick="toggleEmojiPicker()" class="text-outline hover:text-on-surface text-sm">
-                        <span class="material-symbols-outlined text-sm">close</span>
-                    </button>
-                </div>
-                <div id="emoji-grid" class="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto p-1 text-xl custom-scrollbar">
-                    <!-- Emojis preenchidos dinamicamente -->
-                </div>
+            <!-- Popover de Emojis -->
+            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
+                <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
+                <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
+                <button onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1 rounded text-lg">😍</button>
+                <button onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1 rounded text-lg">😎</button>
+                <button onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1 rounded text-lg">👍</button>
+                <button onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1 rounded text-lg">🔥</button>
+                <button onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1 rounded text-lg">🎉</button>
+                <button onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1 rounded text-lg">❤️</button>
+                <button onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1 rounded text-lg">🙏</button>
+                <button onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1 rounded text-lg">🤔</button>
+                <button onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1 rounded text-lg">👋</button>
+                <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
             </div>
 
             <!-- Barra de Digitação e Ações -->
@@ -303,19 +368,18 @@
                         <span>Chamar Atenção</span>
                     </button>
                     
-                    <!-- Botão Anexo Funcional -->
                     <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
                         <span class="material-symbols-outlined text-sm">attach_file</span>
-                        <span>Anexo</span>
+                        <span>Anexar Arquivo</span>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)"/>
                     </label>
                 </div>
                 
                 <div class="flex items-center gap-2">
                     <div class="flex-1 relative">
-                        <input id="message-input" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm pr-10" placeholder="Digite uma mensagem..." type="text"/>
-                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/80 hover:text-primary">
-                            <span onclick="toggleEmojiPicker()" class="material-symbols-outlined cursor-pointer select-none">sentiment_satisfied</span>
+                        <input id="message-input" oninput="handleTypingEvent()" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm" placeholder="Digite uma mensagem..." type="text"/>
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/50">
+                            <span onclick="toggleEmojiPopover()" class="material-symbols-outlined cursor-pointer hover:text-primary select-none">sentiment_satisfied</span>
                         </div>
                     </div>
                     <button onclick="sendMessage()" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-1 transition-all shadow-md">
@@ -330,68 +394,49 @@
 
 <script>
     // =======================================================
-    // 1. LISTA DE EMOJIS & SONS SINTÉTICOS
+    // 1. GERENCIADOR DE ÁUDIO (SINTETIZADOR WEB AUDIO)
     // =======================================================
-    const EMOJI_LIST = [
-        '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
-        '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😋', '😛', '😜',
-        '🤪', '😎', '🥳', '😏', '😒', '😞', '🎉', '🔥', '❤️', '💖',
-        '👍', '👎', '👏', '🙌', '🚀', '✨', '⭐', '💡', '💬', '👀'
-    ];
-
-    function playSyntheticBeep(frequency = 587.33, duration = 0.2, type = 'sine') {
+    function playBeepSound(freq = 587.33, duration = 0.15) {
         try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (!AudioCtx) return;
-            const audioCtx = new AudioCtx();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq; 
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
             osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-        } catch (e) {
-            console.warn("Áudio não suportado ou bloqueado", e);
-        }
+            osc.stop(ctx.currentTime + duration);
+        } catch(e){}
     }
 
-    function playSoundMessage() {
-        playSyntheticBeep(659.25, 0.15, 'sine');
+    function playMessageSound() {
+        playBeepSound(659.25, 0.12);
     }
 
-    function playSoundNudge() {
-        playSyntheticBeep(880, 0.1, 'triangle');
-        setTimeout(() => playSyntheticBeep(1108.73, 0.2, 'triangle'), 100);
+    function playNudgeSound() {
+        playBeepSound(880, 0.25);
     }
 
     // =======================================================
-    // 2. CONFIGURAÇÃO SUPABASE
+    // 2. CONFIGURAÇÕES E ESTADO DO SUPABASE
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go";
-    
-    let _supabase = null;
-    let isSupabaseReady = false;
-
-    try {
-        if (SUPABASE_KEY && SUPABASE_KEY !== "SUA_CHAVE_ANON_AQUI") {
-            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            isSupabaseReady = true;
-        }
-    } catch(e) {
-        console.warn("Supabase não configurado.");
-    }
+    const SUPABASE_KEY = "SUA_CHAVE_ANON_AQUI"; // Certifique-se de preencher com sua chave anon pública
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentUser = "";
-    let currentGroup = "geral";
+    let mainGroup = "geral";
+    let activeChatRoom = "geral"; // Pode ser "geral" ou uma chave DM "dm_usuario1_usuario2"
+    let activeDMTargetUser = null; // Guarda o nome do usuário da conversa privada atual
+    
+    let onlineUsersMap = new Map(); // Guarda a lista de usuários online em tempo real
     let isInitialLoad = true;
+    let typingTimeout = null;
+    let presenceChannel = null;
 
     // =======================================================
-    // 3. LOGIN & LOGOFF
+    // 3. SESSÃO & CONEXÃO
     // =======================================================
     function checkSession() {
         const savedUser = localStorage.getItem("chat_username");
@@ -399,14 +444,13 @@
 
         if (savedUser && savedGroup) {
             currentUser = savedUser;
-            currentGroup = savedGroup;
+            mainGroup = savedGroup;
+            activeChatRoom = savedGroup;
             startChat();
         } else {
             document.getElementById("login-modal").classList.remove("hidden");
             document.getElementById("app-window").classList.add("hidden");
         }
-
-        renderEmojis();
     }
 
     function handleLogin() {
@@ -414,15 +458,16 @@
         const groupInput = document.getElementById("login-group").value.trim();
 
         if (!userInput || !groupInput) {
-            alert("Por favor, preencha o Usuário e a Sala.");
+            alert("Por favor, informe seu Nome e a Sala.");
             return;
         }
 
         currentUser = userInput;
-        currentGroup = groupInput.toLowerCase();
+        mainGroup = groupInput.toLowerCase();
+        activeChatRoom = mainGroup;
 
         localStorage.setItem("chat_username", currentUser);
-        localStorage.setItem("chat_group", currentGroup);
+        localStorage.setItem("chat_group", mainGroup);
 
         document.getElementById("login-modal").classList.add("hidden");
         startChat();
@@ -437,60 +482,208 @@
     function startChat() {
         document.getElementById("app-window").classList.remove("hidden");
 
-        // Atualizar Dados na UI
         document.getElementById("header-user-name").innerText = `@${currentUser}`;
         document.getElementById("sidebar-user-name").innerText = `@${currentUser}`;
-        document.getElementById("header-group-name").innerText = currentGroup;
-        document.getElementById("sidebar-group-name").innerText = `Sala: ${currentGroup}`;
+        document.getElementById("sidebar-group-name").innerText = `Sala: ${mainGroup}`;
 
-        if (isSupabaseReady) {
-            fetchMessages();
-            subscribeRealtime();
+        updateChatHeaderUI();
+        fetchMessages();
+        setupRealtimeEngine();
+    }
+
+    // =======================================================
+    // 4. REALTIME (PRESENCE, TYPING E MENSAGENS)
+    // =======================================================
+    function setupRealtimeEngine() {
+        if (presenceChannel) {
+            _supabase.removeChannel(presenceChannel);
+        }
+
+        // Canal global para presença e digitação no grupo
+        presenceChannel = _supabase.channel(`global-presence-${mainGroup}`, {
+            config: { presence: { key: currentUser } }
+        });
+
+        // Rastreio de Usuários Online (Presence)
+        presenceChannel
+            .on('presence', { event: 'sync' }, () => {
+                const state = presenceChannel.presenceState();
+                onlineUsersMap.clear();
+
+                Object.keys(state).forEach(key => {
+                    const presenceEntries = state[key];
+                    if (presenceEntries && presenceEntries.length > 0) {
+                        const userObj = presenceEntries[0];
+                        if (userObj.username && userObj.username !== currentUser) {
+                            onlineUsersMap.set(userObj.username, userObj);
+                        }
+                    }
+                });
+                renderOnlineUsersList();
+            })
+            // Evento de Digitação (Broadcast)
+            .on('broadcast', { event: 'typing' }, payload => {
+                if (payload.payload.username !== currentUser && payload.payload.room === activeChatRoom) {
+                    showTypingIndicator(payload.payload.username);
+                }
+            })
+            // Evento de Inserção de Mensagens em Tempo Real
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'mensagens'
+            }, payload => {
+                if (!isInitialLoad && payload.new.grupo === activeChatRoom) {
+                    renderMessage(payload.new, true);
+                }
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await presenceChannel.track({
+                        username: currentUser,
+                        onlineAt: new Date().toISOString()
+                    });
+                }
+            });
+    }
+
+    function handleTypingEvent() {
+        if (presenceChannel) {
+            presenceChannel.send({
+                type: 'broadcast',
+                event: 'typing',
+                payload: { username: currentUser, room: activeChatRoom }
+            });
+        }
+    }
+
+    function showTypingIndicator(username) {
+        const indicator = document.getElementById("typing-indicator");
+        document.getElementById("typing-username").innerText = username;
+        indicator.classList.remove("hidden");
+
+        if (typingTimeout) clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            indicator.classList.add("hidden");
+        }, 2500);
+    }
+
+    // =======================================================
+    // 5. TROCA DE SALAS & CONVERSAS PRIVADAS (DM)
+    // =======================================================
+    function getDMRoomName(userA, userB) {
+        const sorted = [userA, userB].sort();
+        return `dm_${sorted[0]}_${sorted[1]}`;
+    }
+
+    function startPrivateChat(targetUsername) {
+        if (targetUsername === currentUser) return;
+
+        activeDMTargetUser = targetUsername;
+        activeChatRoom = getDMRoomName(currentUser, targetUsername);
+        
+        updateChatHeaderUI();
+        fetchMessages();
+        renderOnlineUsersList();
+    }
+
+    function switchToMainGroup() {
+        activeDMTargetUser = null;
+        activeChatRoom = mainGroup;
+
+        updateChatHeaderUI();
+        fetchMessages();
+        renderOnlineUsersList();
+    }
+
+    function updateChatHeaderUI() {
+        const isPrivate = activeDMTargetUser !== null;
+        const mainBtn = document.getElementById("btn-main-room");
+        const privateBadge = document.getElementById("private-badge");
+        const headerTitle = document.getElementById("header-chat-title");
+        const headerSub = document.getElementById("header-sub-info");
+        const chatTypeIcon = document.getElementById("chat-type-icon");
+        const currentChatTitleHeader = document.getElementById("current-chat-title-header");
+
+        if (isPrivate) {
+            headerTitle.innerText = `@${activeDMTargetUser}`;
+            headerSub.innerText = "Conversa Privada (DM)";
+            privateBadge.classList.remove("hidden");
+            chatTypeIcon.innerText = "lock";
+            currentChatTitleHeader.innerText = `Mensagens com @${activeDMTargetUser}`;
+            
+            mainBtn.className = "flex items-center gap-2.5 p-2 rounded-xl bg-white/50 text-on-surface hover:bg-white/80 font-bold text-xs shadow-sm cursor-pointer transition-all";
         } else {
-            renderMessage({
-                usuario: "Sistema",
-                texto: `Bem-vindo à sala ${currentGroup}! Você pode enviar mensagens normalmente.`
-            }, false);
+            headerTitle.innerText = `Sala: ${mainGroup}`;
+            headerSub.innerText = "Grupo Público";
+            privateBadge.classList.add("hidden");
+            chatTypeIcon.innerText = "forum";
+            currentChatTitleHeader.innerText = "Histórico de Mensagens";
+
+            mainBtn.className = "flex items-center gap-2.5 p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all";
         }
     }
 
     // =======================================================
-    // 4. EMOJI PICKER
+    // 6. RENDERIZAÇÃO DE LISTA DE USUÁRIOS
     // =======================================================
-    function renderEmojis() {
-        const grid = document.getElementById("emoji-grid");
-        grid.innerHTML = "";
-        EMOJI_LIST.forEach(emoji => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "hover:bg-white/60 rounded-lg p-1 text-center transition cursor-pointer select-none";
-            btn.textContent = emoji;
-            btn.onclick = () => insertEmoji(emoji);
-            grid.appendChild(btn);
+    function renderOnlineUsersList() {
+        const container = document.getElementById("online-users-list");
+        const badge = document.getElementById("online-count-badge");
+        const filterText = document.getElementById("search-users-input").value.toLowerCase();
+
+        container.innerHTML = "";
+        
+        const onlineUsersArray = Array.from(onlineUsersMap.keys());
+        badge.innerText = onlineUsersArray.length;
+
+        if (onlineUsersArray.length === 0) {
+            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum outro usuário online no momento.</p>`;
+            return;
+        }
+
+        onlineUsersArray.forEach(username => {
+            if (filterText && !username.toLowerCase().includes(filterText)) return;
+
+            const isCurrentDM = activeDMTargetUser === username;
+            const item = document.createElement("div");
+            
+            item.onclick = () => startPrivateChat(username);
+            item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                isCurrentDM 
+                    ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' 
+                    : 'hover:bg-white/60 text-on-surface border border-transparent'
+            }`;
+
+            item.innerHTML = `
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <div class="relative flex-shrink-0">
+                        <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-sm">person</span>
+                        </div>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                    </div>
+                    <span class="truncate">@${escapeHtml(username)}</span>
+                </div>
+                <span class="material-symbols-outlined text-sm opacity-60">chat</span>
+            `;
+
+            container.appendChild(item);
         });
     }
 
-    function toggleEmojiPicker() {
-        const popover = document.getElementById("emoji-popover");
-        popover.classList.toggle("hidden");
-    }
-
-    function insertEmoji(emoji) {
-        const input = document.getElementById("message-input");
-        input.value += emoji;
-        input.focus();
-        toggleEmojiPicker();
+    function filterUserList() {
+        renderOnlineUsersList();
     }
 
     // =======================================================
-    // 5. RENDERIZAÇÃO E NUDGE
+    // 7. RENDERIZAÇÃO DE MENSAGENS E ANEXOS
     // =======================================================
     const chatContainer = document.getElementById("chat-messages");
 
     function renderMessage(msg, isRealtime = false) {
         const isMe = msg.usuario === currentUser;
 
-        // Trata o Chamar Atenção (Nudge)
         if (msg.texto === "__NUDGE__") {
             const nudgeDiv = document.createElement("div");
             nudgeDiv.className = "flex justify-center my-2";
@@ -505,18 +698,14 @@
 
             if (isRealtime && !isMe) {
                 triggerNudgeEffect();
-            } else if (isMe && isRealtime) {
-                triggerNudgeEffect(false);
             }
             return;
         }
 
-        // Som para novas mensagens
         if (isRealtime && !isMe) {
-            playSoundMessage();
+            playMessageSound();
         }
 
-        // Renderiza bolha de mensagem sem tags <img> quebradas
         const msgWrapper = document.createElement("div");
         msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
 
@@ -524,65 +713,112 @@
             ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' 
             : 'message-bubble-incoming rounded-2xl rounded-tl-none';
 
-        const avatarIcon = !isMe ? `
-            <div class="w-7 h-7 rounded-full bg-primary/20 border border-white/80 flex items-center justify-center text-primary shadow-sm shrink-0 mt-1">
-                <span class="material-symbols-outlined text-base">person</span>
-            </div>
-        ` : '';
-
-        const myAvatarIcon = isMe ? `
-            <div class="w-7 h-7 rounded-full bg-primary text-white border border-white/80 flex items-center justify-center shadow-sm shrink-0 mt-1">
-                <span class="material-symbols-outlined text-base">person</span>
-            </div>
-        ` : '';
-
         msgWrapper.innerHTML = `
-            ${avatarIcon}
+            ${!isMe ? `
+                <div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1">
+                    <span class="material-symbols-outlined text-base">person</span>
+                </div>
+            ` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
                 <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
-                <div class="${bubbleClass} px-3 py-2 text-sm text-on-surface">
-                    ${formatMessageBody(msg.texto)}
+                <div class="${bubbleClass} px-3.5 py-2 text-sm text-on-surface">
+                    ${formatMessageContent(msg.texto)}
                 </div>
             </div>
-            ${myAvatarIcon}
+            ${isMe ? `
+                <div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm">
+                    <span class="material-symbols-outlined text-base">person</span>
+                </div>
+            ` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
         scrollToBottom();
     }
 
-    function formatMessageBody(texto) {
-        if (texto.startsWith("[ANEXO]:")) {
-            const fileName = texto.replace("[ANEXO]:", "");
+    function formatMessageContent(texto) {
+        // Trata Anexo de Imagem Base64 / URL
+        if (texto.startsWith("[IMAGEM]:")) {
+            const imgData = texto.replace("[IMAGEM]:", "");
             return `
-                <div class="flex items-center gap-2 font-bold text-xs text-primary">
-                    <span class="material-symbols-outlined text-base">description</span>
-                    <span>${escapeHtml(fileName)}</span>
+                <div class="space-y-1">
+                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">image</span> Imagem Anexada
+                    </div>
+                    <img src="${imgData}" onclick="openImageModal('${imgData}')" class="max-w-[220px] max-h-[180px] rounded-xl object-cover border border-white/60 shadow-sm cursor-pointer hover:scale-105 transition-transform"/>
                 </div>
             `;
         }
+
+        // Trata Anexo de Documento / Arquivo Generico
+        if (texto.startsWith("[ARQUIVO]:")) {
+            const rawData = texto.replace("[ARQUIVO]:", "");
+            const parts = rawData.split("|");
+            const fileName = parts[0] || "arquivo";
+            const fileData = parts[1] || "#";
+
+            return `
+                <div class="flex items-center gap-3 p-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm">
+                    <div class="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-xl">description</span>
+                    </div>
+                    <div class="flex flex-col overflow-hidden max-w-[160px]">
+                        <span class="text-xs font-bold text-on-surface truncate" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</span>
+                        <span class="text-[10px] text-outline">Documento</span>
+                    </div>
+                    <a href="${fileData}" download="${escapeHtml(fileName)}" target="_blank" class="p-1.5 bg-primary text-white rounded-lg hover:bg-primary-container transition-colors shadow-sm ml-1" title="Baixar/Abrir">
+                        <span class="material-symbols-outlined text-sm">download</span>
+                    </a>
+                </div>
+            `;
+        }
+
         return escapeHtml(texto);
     }
 
-    function triggerNudgeEffect(fullFlash = true) {
-        playSoundNudge();
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        const isImage = file.type.startsWith("image/");
+
+        reader.onload = function(e) {
+            const fileDataBase64 = e.target.result;
+
+            if (isImage) {
+                sendMessage(`[IMAGEM]:${fileDataBase64}`);
+            } else {
+                sendMessage(`[ARQUIVO]:${file.name}|${fileDataBase64}`);
+            }
+        };
+
+        reader.readAsDataURL(file);
+        event.target.value = "";
+    }
+
+    function openImageModal(imgSrc) {
+        document.getElementById("image-modal-img").src = imgSrc;
+        document.getElementById("image-modal").classList.remove("hidden");
+    }
+
+    function closeImageModal() {
+        document.getElementById("image-modal").classList.add("hidden");
+    }
+
+    function triggerNudgeEffect() {
+        playNudgeSound();
         chatContainer.classList.add('nudge-alert');
         
-        if (fullFlash) {
-            const flash = document.createElement('div');
-            flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
-            document.body.appendChild(flash);
+        const flash = document.createElement('div');
+        flash.className = 'fixed inset-0 bg-white/20 pointer-events-none z-50 transition-opacity duration-300';
+        document.body.appendChild(flash);
 
-            setTimeout(() => {
-                chatContainer.classList.remove('nudge-alert');
-                flash.style.opacity = '0';
-                setTimeout(() => flash.remove(), 300);
-            }, 500);
-        } else {
-            setTimeout(() => {
-                chatContainer.classList.remove('nudge-alert');
-            }, 500);
-        }
+        setTimeout(() => {
+            chatContainer.classList.remove('nudge-alert');
+            flash.style.opacity = '0';
+            setTimeout(() => flash.remove(), 300);
+        }, 500);
     }
 
     function escapeHtml(str) {
@@ -593,26 +829,37 @@
         chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
+    function toggleEmojiPopover() {
+        document.getElementById("emoji-popover").classList.toggle("hidden");
+    }
+
+    function insertEmoji(emoji) {
+        const input = document.getElementById("message-input");
+        input.value += emoji;
+        document.getElementById("emoji-popover").classList.add("hidden");
+        input.focus();
+    }
+
     // =======================================================
-    // 6. OPERAÇÕES SUPABASE
+    // 8. COMUNICAÇÃO COM O SUPABASE
     // =======================================================
     async function fetchMessages() {
-        if (!isSupabaseReady) return;
         isInitialLoad = true;
+        chatContainer.innerHTML = "";
+
         const { data, error } = await _supabase
             .from("mensagens")
             .select("*")
-            .eq("grupo", currentGroup)
+            .eq("grupo", activeChatRoom)
             .order("id", { ascending: true });
 
         if (error) {
-            console.error("Erro ao carregar mensagens:", error);
+            console.warn("Aviso ao buscar mensagens:", error.message);
             isInitialLoad = false;
             return;
         }
 
-        chatContainer.innerHTML = "";
-        data.forEach(msg => renderMessage(msg, false));
+        if (data) data.forEach(msg => renderMessage(msg, false));
         isInitialLoad = false;
     }
 
@@ -624,66 +871,32 @@
 
         if (!textToSend) input.value = "";
 
-        document.getElementById("emoji-popover").classList.add("hidden");
-
-        const messageData = { 
+        const payload = { 
             usuario: currentUser, 
             texto: texto, 
-            grupo: currentGroup
+            grupo: activeChatRoom
         };
 
-        if (isSupabaseReady) {
-            let { error } = await _supabase
-                .from("mensagens")
-                .insert([messageData]);
+        const { error } = await _supabase.from("mensagens").insert([payload]);
 
-            if (error) {
-                console.warn("Tentando formato simplificado...", error);
-                await _supabase.from("mensagens").insert([{ usuario: currentUser, texto: texto }]);
-            }
-        } else {
-            renderMessage(messageData, true);
+        if (error) {
+            console.warn("Aviso Supabase ao enviar. Exibindo localmente:", error.message);
+            renderMessage(payload, true);
         }
     }
 
     async function sendNudge() {
-        const messageData = { 
+        const payload = { 
             usuario: currentUser, 
             texto: "__NUDGE__", 
-            grupo: currentGroup
+            grupo: activeChatRoom
         };
 
-        if (isSupabaseReady) {
-            await _supabase.from("mensagens").insert([messageData]);
-        } else {
-            renderMessage(messageData, true);
-        }
-    }
+        const { error } = await _supabase.from("mensagens").insert([payload]);
 
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            sendMessage(`[ANEXO]: ${file.name}`);
-            event.target.value = "";
+        if (error) {
+            renderMessage(payload, true);
         }
-    }
-
-    function subscribeRealtime() {
-        if (!isSupabaseReady) return;
-        _supabase
-            .channel(`sala-${currentGroup}`)
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'mensagens'
-            }, payload => {
-                if (!isInitialLoad && payload.new) {
-                    if (!payload.new.grupo || payload.new.grupo === currentGroup) {
-                        renderMessage(payload.new, true);
-                    }
-                }
-            })
-            .subscribe();
     }
 
     document.getElementById("message-input").addEventListener("keypress", (e) => {
