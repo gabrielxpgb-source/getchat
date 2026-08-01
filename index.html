@@ -149,7 +149,7 @@
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.5);
         }
 
-        /* Animação para indicador de digitação */
+        /* Animação do Indicador de Digitação */
         .dot-flashing {
             position: relative;
             width: 6px;
@@ -214,7 +214,7 @@
     </div>
 </div>
 
-<!-- MODAL DE PREVISUALIZAÇÃO DE IMAGEM AMPLIADA -->
+<!-- MODAL DE AMPLIAR IMAGEM -->
 <div id="image-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden" onclick="closeImageModal()">
     <div class="relative max-w-[90vw] max-h-[90vh] p-2" onclick="event.stopPropagation()">
         <img id="image-modal-img" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl border-2 border-white/40 object-contain"/>
@@ -293,14 +293,17 @@
                 <!-- Sala Principal -->
                 <div>
                     <h3 class="px-1 text-[10px] font-bold uppercase tracking-wider text-outline/80 mb-1">Salas Públicas</h3>
-                    <div id="btn-main-room" onclick="switchToMainGroup()" class="flex items-center gap-2.5 p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
-                        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-base">groups</span>
+                    <div id="btn-main-room" onclick="switchToMainGroup()" class="relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-base">groups</span>
+                            </div>
+                            <div class="flex flex-col overflow-hidden">
+                                <span id="sidebar-group-name" class="truncate">Sala: geral</span>
+                                <span class="text-[9px] font-normal opacity-80">Conversa Aberta</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col overflow-hidden">
-                            <span id="sidebar-group-name" class="truncate">Sala: geral</span>
-                            <span class="text-[9px] font-normal opacity-80">Conversa Aberta</span>
-                        </div>
+                        <span id="unread-main-group" class="hidden bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-md animate-bounce">0</span>
                     </div>
                 </div>
 
@@ -311,7 +314,7 @@
                         <span id="online-count-badge" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </div>
                     <div id="online-users-list" class="space-y-1">
-                        <!-- Renderizado via Javascript -->
+                        <!-- Renderizado via JS -->
                     </div>
                 </div>
             </div>
@@ -325,7 +328,7 @@
             </div>
         </aside>
 
-        <!-- Área Central das Mensagens -->
+        <!-- Área Central de Mensagens -->
         <main class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
             <!-- Header do Chat Atual -->
             <div class="bg-white/60 px-4 py-2 flex items-center justify-between border-b border-white/40 shadow-sm">
@@ -344,7 +347,7 @@
                 <!-- Mensagens inseridas via JS -->
             </div>
 
-            <!-- Popover de Emojis -->
+            <!-- Popover Emojis -->
             <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
                 <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
                 <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
@@ -394,43 +397,38 @@
 
 <script>
     // =======================================================
-    // 1. GERENCIADOR DE ÁUDIO (SINTETIZADOR WEB AUDIO)
+    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR
     // =======================================================
-    function playBeepSound(freq = 587.33, duration = 0.15) {
-        try {
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.frequency.value = freq; 
-            gain.gain.setValueAtTime(0.1, ctx.currentTime);
-            osc.start();
-            osc.stop(ctx.currentTime + duration);
-        } catch(e){}
-    }
+    // Ajuste os caminhos abaixo conforme a localização real dos seus arquivos de som no servidor.
+    const SOUNDS = {
+        message: new Audio('sounds/message.mp3'),
+        nudge: new Audio('sounds/nudge.mp3')
+    };
 
     function playMessageSound() {
-        playBeepSound(659.25, 0.12);
+        SOUNDS.message.currentTime = 0;
+        SOUNDS.message.play().catch(() => {}); // catch para ignorar bloqueios do navegador antes do primeiro clique
     }
 
     function playNudgeSound() {
-        playBeepSound(880, 0.25);
+        SOUNDS.nudge.currentTime = 0;
+        SOUNDS.nudge.play().catch(() => {});
     }
 
     // =======================================================
     // 2. CONFIGURAÇÕES E ESTADO DO SUPABASE
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Certifique-se de preencher com sua chave anon pública
+    const SUPABASE_KEY = "SUA_CHAVE_ANON_AQUI"; // Lembre de colocar sua chave anon aqui
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentUser = "";
     let mainGroup = "geral";
-    let activeChatRoom = "geral"; // Pode ser "geral" ou uma chave DM "dm_usuario1_usuario2"
-    let activeDMTargetUser = null; // Guarda o nome do usuário da conversa privada atual
+    let activeChatRoom = "geral";
+    let activeDMTargetUser = null;
     
-    let onlineUsersMap = new Map(); // Guarda a lista de usuários online em tempo real
+    let onlineUsersMap = new Map();
+    let unreadCounts = new Map(); // Armazena contagem de não lidos: key -> roomName, value -> count
     let isInitialLoad = true;
     let typingTimeout = null;
     let presenceChannel = null;
@@ -492,19 +490,17 @@
     }
 
     // =======================================================
-    // 4. REALTIME (PRESENCE, TYPING E MENSAGENS)
+    // 4. REALTIME ENGINE & NOTIFICAÇÕES NÃO LIDAS
     // =======================================================
     function setupRealtimeEngine() {
         if (presenceChannel) {
             _supabase.removeChannel(presenceChannel);
         }
 
-        // Canal global para presença e digitação no grupo
         presenceChannel = _supabase.channel(`global-presence-${mainGroup}`, {
             config: { presence: { key: currentUser } }
         });
 
-        // Rastreio de Usuários Online (Presence)
         presenceChannel
             .on('presence', { event: 'sync' }, () => {
                 const state = presenceChannel.presenceState();
@@ -521,20 +517,30 @@
                 });
                 renderOnlineUsersList();
             })
-            // Evento de Digitação (Broadcast)
             .on('broadcast', { event: 'typing' }, payload => {
                 if (payload.payload.username !== currentUser && payload.payload.room === activeChatRoom) {
                     showTypingIndicator(payload.payload.username);
                 }
             })
-            // Evento de Inserção de Mensagens em Tempo Real
             .on('postgres_changes', { 
                 event: 'INSERT', 
                 schema: 'public', 
                 table: 'mensagens'
             }, payload => {
-                if (!isInitialLoad && payload.new.grupo === activeChatRoom) {
-                    renderMessage(payload.new, true);
+                if (isInitialLoad) return;
+
+                const newMsg = payload.new;
+                const msgRoom = newMsg.grupo;
+
+                if (msgRoom === activeChatRoom) {
+                    // Se o usuário já está com a sala aberta: renderiza direto
+                    renderMessage(newMsg, true);
+                } else {
+                    // Se veio para outra sala/DM privada: incrementa o contador de não lidas
+                    if (newMsg.usuario !== currentUser) {
+                        incrementUnread(msgRoom);
+                        playMessageSound();
+                    }
                 }
             })
             .subscribe(async (status) => {
@@ -545,6 +551,33 @@
                     });
                 }
             });
+    }
+
+    function incrementUnread(roomName) {
+        const current = unreadCounts.get(roomName) || 0;
+        unreadCounts.set(roomName, current + 1);
+        updateUnreadBadgesUI();
+    }
+
+    function clearUnread(roomName) {
+        unreadCounts.delete(roomName);
+        updateUnreadBadgesUI();
+    }
+
+    function updateUnreadBadgesUI() {
+        // Atualiza a notificação da sala principal
+        const mainGroupUnreadBadge = document.getElementById("unread-main-group");
+        const mainGroupCount = unreadCounts.get(mainGroup) || 0;
+
+        if (mainGroupCount > 0) {
+            mainGroupUnreadBadge.innerText = mainGroupCount;
+            mainGroupUnreadBadge.classList.remove("hidden");
+        } else {
+            mainGroupUnreadBadge.classList.add("hidden");
+        }
+
+        // Re-renderiza a lista para atualizar badges nas DMs
+        renderOnlineUsersList();
     }
 
     function handleTypingEvent() {
@@ -569,7 +602,7 @@
     }
 
     // =======================================================
-    // 5. TROCA DE SALAS & CONVERSAS PRIVADAS (DM)
+    // 5. NAVEGAÇÃO DE SALAS
     // =======================================================
     function getDMRoomName(userA, userB) {
         const sorted = [userA, userB].sort();
@@ -582,6 +615,7 @@
         activeDMTargetUser = targetUsername;
         activeChatRoom = getDMRoomName(currentUser, targetUsername);
         
+        clearUnread(activeChatRoom);
         updateChatHeaderUI();
         fetchMessages();
         renderOnlineUsersList();
@@ -591,6 +625,7 @@
         activeDMTargetUser = null;
         activeChatRoom = mainGroup;
 
+        clearUnread(mainGroup);
         updateChatHeaderUI();
         fetchMessages();
         renderOnlineUsersList();
@@ -612,7 +647,7 @@
             chatTypeIcon.innerText = "lock";
             currentChatTitleHeader.innerText = `Mensagens com @${activeDMTargetUser}`;
             
-            mainBtn.className = "flex items-center gap-2.5 p-2 rounded-xl bg-white/50 text-on-surface hover:bg-white/80 font-bold text-xs shadow-sm cursor-pointer transition-all";
+            mainBtn.className = "relative flex items-center justify-between p-2 rounded-xl bg-white/50 text-on-surface hover:bg-white/80 font-bold text-xs shadow-sm cursor-pointer transition-all";
         } else {
             headerTitle.innerText = `Sala: ${mainGroup}`;
             headerSub.innerText = "Grupo Público";
@@ -620,12 +655,12 @@
             chatTypeIcon.innerText = "forum";
             currentChatTitleHeader.innerText = "Histórico de Mensagens";
 
-            mainBtn.className = "flex items-center gap-2.5 p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all";
+            mainBtn.className = "relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all";
         }
     }
 
     // =======================================================
-    // 6. RENDERIZAÇÃO DE LISTA DE USUÁRIOS
+    // 6. RENDERIZAÇÃO DA LISTA DE USUÁRIOS
     // =======================================================
     function renderOnlineUsersList() {
         const container = document.getElementById("online-users-list");
@@ -646,8 +681,10 @@
             if (filterText && !username.toLowerCase().includes(filterText)) return;
 
             const isCurrentDM = activeDMTargetUser === username;
+            const dmRoomName = getDMRoomName(currentUser, username);
+            const unreadCount = unreadCounts.get(dmRoomName) || 0;
+
             const item = document.createElement("div");
-            
             item.onclick = () => startPrivateChat(username);
             item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
                 isCurrentDM 
@@ -665,7 +702,15 @@
                     </div>
                     <span class="truncate">@${escapeHtml(username)}</span>
                 </div>
-                <span class="material-symbols-outlined text-sm opacity-60">chat</span>
+                <div class="flex items-center gap-1">
+                    ${unreadCount > 0 ? `
+                        <span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">
+                            ${unreadCount}
+                        </span>
+                    ` : `
+                        <span class="material-symbols-outlined text-sm opacity-60">chat</span>
+                    `}
+                </div>
             `;
 
             container.appendChild(item);
@@ -677,7 +722,7 @@
     }
 
     // =======================================================
-    // 7. RENDERIZAÇÃO DE MENSAGENS E ANEXOS
+    // 7. MENSAGENS E PREVISUALIZAÇÃO DE MIDIAS (FOTO, ÁUDIO, VÍDEO)
     // =======================================================
     const chatContainer = document.getElementById("chat-messages");
 
@@ -737,7 +782,7 @@
     }
 
     function formatMessageContent(texto) {
-        // Trata Anexo de Imagem Base64 / URL
+        // Pré-visualização de Imagens
         if (texto.startsWith("[IMAGEM]:")) {
             const imgData = texto.replace("[IMAGEM]:", "");
             return `
@@ -750,7 +795,39 @@
             `;
         }
 
-        // Trata Anexo de Documento / Arquivo Generico
+        // Pré-visualização de Vídeos
+        if (texto.startsWith("[VIDEO]:")) {
+            const videoData = texto.replace("[VIDEO]:", "");
+            return `
+                <div class="space-y-1">
+                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">movie</span> Vídeo Anexado
+                    </div>
+                    <video controls class="max-w-[240px] max-h-[180px] rounded-xl border border-white/60 shadow-sm bg-black">
+                        <source src="${videoData}" type="video/mp4">
+                        Seu navegador não suporta reprodução de vídeos.
+                    </video>
+                </div>
+            `;
+        }
+
+        // Pré-visualização de Áudios
+        if (texto.startsWith("[AUDIO]:")) {
+            const audioData = texto.replace("[AUDIO]:", "");
+            return `
+                <div class="space-y-1">
+                    <div class="text-[10px] font-bold opacity-70 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">audiotrack</span> Áudio Anexado
+                    </div>
+                    <audio controls class="max-w-[240px] h-10 rounded-lg">
+                        <source src="${audioData}">
+                        Seu navegador não suporta este áudio.
+                    </audio>
+                </div>
+            `;
+        }
+
+        // Anexo de Documento Genérico
         if (texto.startsWith("[ARQUIVO]:")) {
             const rawData = texto.replace("[ARQUIVO]:", "");
             const parts = rawData.split("|");
@@ -781,13 +858,16 @@
         if (!file) return;
 
         const reader = new FileReader();
-        const isImage = file.type.startsWith("image/");
 
         reader.onload = function(e) {
             const fileDataBase64 = e.target.result;
 
-            if (isImage) {
+            if (file.type.startsWith("image/")) {
                 sendMessage(`[IMAGEM]:${fileDataBase64}`);
+            } else if (file.type.startsWith("video/")) {
+                sendMessage(`[VIDEO]:${fileDataBase64}`);
+            } else if (file.type.startsWith("audio/")) {
+                sendMessage(`[AUDIO]:${fileDataBase64}`);
             } else {
                 sendMessage(`[ARQUIVO]:${file.name}|${fileDataBase64}`);
             }
@@ -841,7 +921,7 @@
     }
 
     // =======================================================
-    // 8. COMUNICAÇÃO COM O SUPABASE
+    // 8. COMUNICAÇÃO COM SUPABASE
     // =======================================================
     async function fetchMessages() {
         isInitialLoad = true;
