@@ -188,28 +188,68 @@
 </head>
 <body class="p-4">
 
-<!-- 1. TELA DE LOGIN -->
+<!-- 1. TELA DE LOGIN / CADASTRO COM CÓDIGO DE ACESSO -->
 <div id="login-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-md">
     <div class="glass-window p-8 rounded-2xl w-full max-w-md shadow-2xl flex flex-col gap-4">
+        
+        <!-- Header Modal -->
         <div class="flex items-center justify-center gap-2 mb-2">
             <span class="material-symbols-outlined text-primary text-4xl">forum</span>
-            <h2 class="text-2xl font-bold text-primary">Entrar no Chat</h2>
-        </div>
-        
-        <div>
-            <label class="block text-xs font-bold text-on-surface-variant mb-1">Seu Apelido/Nome</label>
-            <input id="login-username" type="text" placeholder="Ex: kiki" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+            <h2 class="text-2xl font-bold text-primary">Chat do Messenger</h2>
         </div>
 
-        <div>
-            <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome do Grupo / Sala Geral</label>
-            <input id="login-group" type="text" placeholder="Ex: geral" value="geral" class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+        <!-- TABS LOGIN vs CADASTRO -->
+        <div class="flex border-b border-white/60 mb-2">
+            <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="flex-1 pb-2 font-bold text-sm text-primary border-b-2 border-primary transition-all">Entrar</button>
+            <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="flex-1 pb-2 font-bold text-sm text-outline border-b-2 border-transparent hover:text-primary transition-all">Criar Conta</button>
         </div>
 
-        <button onclick="handleLogin()" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
-            <span>Conectar</span>
-            <span class="material-symbols-outlined text-sm">login</span>
-        </button>
+        <!-- FORMULÁRIO DE LOGIN -->
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="flex flex-col gap-3">
+            <div>
+                <label class="block text-xs font-bold text-on-surface-variant mb-1">Código de Acesso Rápido</label>
+                <input id="login-code-input" type="text" placeholder="Ex: gabriel180795" required class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm lowercase"/>
+            </div>
+
+            <button type="submit" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
+                <span>Acessar Chat</span>
+                <span class="material-symbols-outlined text-sm">login</span>
+            </button>
+        </form>
+
+        <!-- FORMULÁRIO DE CADASTRO -->
+        <form id="registerForm" onsubmit="handleRegisterSubmit(event)" class="flex flex-col gap-3 hidden">
+            <div>
+                <label class="block text-xs font-bold text-on-surface-variant mb-1">Nome Completo</label>
+                <input id="reg-fullname-input" type="text" placeholder="Ex: Gabriel Silva Santos" required class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-on-surface-variant mb-1">Data de Nascimento</label>
+                <input id="reg-birth-input" type="date" required class="w-full px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 focus:outline-none focus:ring-2 focus:ring-primary/40 text-sm"/>
+            </div>
+
+            <button type="submit" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-2 flex items-center justify-center gap-2">
+                <span>Gerar Código & Cadastrar</span>
+                <span class="material-symbols-outlined text-sm">badge</span>
+            </button>
+        </form>
+
+        <!-- MODAL / ALERTA DE CÓDIGO CRIADO COM SUCESSO -->
+        <div id="codeSuccessBox" class="hidden text-center flex flex-col gap-3">
+            <div class="w-10 h-10 bg-green-500/20 text-green-700 rounded-full flex items-center justify-center mx-auto font-bold text-lg">✓</div>
+            <h3 class="text-base font-bold text-on-surface">Cadastro Concluído!</h3>
+            <p class="text-xs text-outline">Seu código de acesso para os próximos logins é:</p>
+            <div class="bg-white/80 border border-white rounded-xl p-3 flex items-center justify-between shadow-inner">
+                <span id="generatedCodeDisplay" class="font-mono text-lg font-bold text-primary"></span>
+                <button type="button" onclick="copyCode()" class="text-xs bg-primary/10 hover:bg-primary/20 text-primary font-bold px-3 py-1.5 rounded-lg border border-primary/30 transition-colors">Copiar</button>
+            </div>
+            <button type="button" onclick="enterChatWithNewUser()" class="gel-button w-full py-3 rounded-xl text-white font-bold text-sm shadow-lg mt-1">
+                Entrar no Chat Agora
+            </button>
+        </div>
+
+        <p id="authError" class="text-red-600 text-xs text-center hidden font-bold"></p>
     </div>
 </div>
 
@@ -396,7 +436,7 @@
 
 <script>
     // =======================================================
-    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR (COM FALLBACK WEB)
+    // 1. GERENCIADOR DE ÁUDIO DO SERVIDOR
     // =======================================================
     const SOUNDS = {
         message: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'),
@@ -417,10 +457,11 @@
     // 2. CONFIGURAÇÕES E ESTADO DO SUPABASE
     // =======================================================
     const SUPABASE_URL = "https://sgnygzsbgqskcftfgncj.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go"; // Insira sua chave anon do Supabase aqui
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNnbnlnenNiZ3Fza2NmdGZnbmNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MDk3NjgsImV4cCI6MjEwMTA4NTc2OH0.oBAjEGtPZCeyjjz4aeSovvM-DKZzxIeIAHIHD79B6go";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentUser = "";
+    let currentUser = ""; // Nome de exibição (Primeiro + Último Sobrenome)
+    let currentUserProfile = null;
     let mainGroup = "geral";
     let activeChatRoom = "geral";
     let activeDMTargetUser = null;
@@ -432,16 +473,16 @@
     let presenceChannel = null;
 
     // =======================================================
-    // 3. SESSÃO & CONEXÃO
+    // 3. SESSÃO, AUTENTICAÇÃO E CADASTRO
     // =======================================================
     function checkSession() {
-        const savedUser = localStorage.getItem("chat_username");
-        const savedGroup = localStorage.getItem("chat_group");
+        const savedUser = localStorage.getItem("chat_user");
 
-        if (savedUser && savedGroup) {
-            currentUser = savedUser;
-            mainGroup = savedGroup;
-            activeChatRoom = savedGroup;
+        if (savedUser) {
+            currentUserProfile = JSON.parse(savedUser);
+            currentUser = currentUserProfile.nome_exibicao;
+            mainGroup = "geral";
+            activeChatRoom = mainGroup;
             startChat();
         } else {
             document.getElementById("login-modal").classList.remove("hidden");
@@ -449,29 +490,127 @@
         }
     }
 
-    function handleLogin() {
-        const userInput = document.getElementById("login-username").value.trim();
-        const groupInput = document.getElementById("login-group").value.trim();
-
-        if (!userInput || !groupInput) {
-            alert("Por favor, informe seu Nome e a Sala.");
-            return;
+    function switchAuthTab(tab) {
+        document.getElementById("authError").classList.add("hidden");
+        if (tab === 'login') {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('tabLoginBtn').className = "flex-1 pb-2 font-bold text-sm text-primary border-b-2 border-primary transition-all";
+            document.getElementById('tabRegisterBtn').className = "flex-1 pb-2 font-bold text-sm text-outline border-b-2 border-transparent hover:text-primary transition-all";
+        } else {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+            document.getElementById('tabRegisterBtn').className = "flex-1 pb-2 font-bold text-sm text-primary border-b-2 border-primary transition-all";
+            document.getElementById('tabLoginBtn').className = "flex-1 pb-2 font-bold text-sm text-outline border-b-2 border-transparent hover:text-primary transition-all";
         }
+    }
 
-        currentUser = userInput;
-        mainGroup = groupInput.toLowerCase();
-        activeChatRoom = mainGroup;
+    function formatDisplayName(fullName) {
+        const parts = fullName.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        return `${parts[0]} ${parts[parts.length - 1]}`;
+    }
 
-        localStorage.setItem("chat_username", currentUser);
-        localStorage.setItem("chat_group", mainGroup);
+    async function handleRegisterSubmit(e) {
+        e.preventDefault();
+        const errorEl = document.getElementById('authError');
+        errorEl.classList.add('hidden');
 
+        const fullName = document.getElementById('reg-fullname-input').value.trim();
+        const birthDate = document.getElementById('reg-birth-input').value;
+
+        if (!fullName || !birthDate) return;
+
+        const firstName = fullName.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+        const dateParts = birthDate.split('-');
+        const day = dateParts[2];
+        const month = dateParts[1];
+        const yearShort = dateParts[0].slice(-2);
+
+        let generatedCode = `${firstName}${day}${month}${yearShort}`;
+        const displayName = formatDisplayName(fullName);
+
+        try {
+            const { data: existing } = await _supabase
+                .from('profiles')
+                .select('codigo_acesso')
+                .eq('codigo_acesso', generatedCode);
+
+            if (existing && existing.length > 0) {
+                generatedCode += Math.floor(10 + Math.random() * 90);
+            }
+
+            const { data, error } = await _supabase
+                .from('profiles')
+                .insert([{
+                    codigo_acesso: generatedCode,
+                    nome_completo: fullName,
+                    nome_exibicao: displayName,
+                    data_nascimento: birthDate
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            currentUserProfile = data;
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('generatedCodeDisplay').textContent = generatedCode;
+            document.getElementById('codeSuccessBox').classList.remove('hidden');
+
+        } catch (err) {
+            errorEl.textContent = err.message || 'Erro ao criar conta. Certifique-se de que a tabela profiles foi criada.';
+            errorEl.classList.remove('hidden');
+        }
+    }
+
+    function copyCode() {
+        const code = document.getElementById('generatedCodeDisplay').textContent;
+        navigator.clipboard.writeText(code);
+        alert('Código de Acesso copiado!');
+    }
+
+    function enterChatWithNewUser() {
+        localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
+        currentUser = currentUserProfile.nome_exibicao;
+        document.getElementById('codeSuccessBox').classList.add('hidden');
         document.getElementById("login-modal").classList.add("hidden");
         startChat();
     }
 
+    async function handleLoginSubmit(e) {
+        e.preventDefault();
+        const errorEl = document.getElementById('authError');
+        errorEl.classList.add('hidden');
+
+        const codeInput = document.getElementById("login-code-input").value.trim().toLowerCase();
+
+        try {
+            const { data, error } = await _supabase
+                .from('profiles')
+                .select('*')
+                .eq('codigo_acesso', codeInput)
+                .single();
+
+            if (error || !data) {
+                throw new Error('Código de acesso inválido ou não encontrado.');
+            }
+
+            currentUserProfile = data;
+            currentUser = currentUserProfile.nome_exibicao;
+            localStorage.setItem('chat_user', JSON.stringify(currentUserProfile));
+            
+            document.getElementById("login-modal").classList.add("hidden");
+            startChat();
+
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        }
+    }
+
     function handleLogoff() {
-        localStorage.removeItem("chat_username");
-        localStorage.removeItem("chat_group");
+        localStorage.removeItem("chat_user");
         location.reload();
     }
 
