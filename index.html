@@ -300,38 +300,146 @@
     </div>
 </div>
 
-<!-- 3. MODAL PAINEL MASTER (NOVO) -->
-<div id="master-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md hidden">
-    <div class="glass-window p-6 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col gap-4 max-h-[85vh] overflow-hidden">
-        <div class="flex items-center justify-between border-b border-white/40 pb-3">
-            <div class="flex items-center gap-2 text-amber-600">
-                <span class="material-symbols-outlined">admin_panel_settings</span>
-                <h2 class="text-lg font-bold text-on-surface">Painel de Gerenciamento Master</h2>
+<!-- 3. PAINEL MASTER -->
+<div id="master-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md hidden p-4">
+    <div class="glass-window w-full max-w-5xl h-[82vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/60">
+        <div class="glossy-header px-6 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold">Painel Master</h2>
+                    <p class="text-[11px] text-white/75">Usuários, acessos e permissões do GetChat</p>
+                </div>
             </div>
-            <button onclick="closeMasterModal()" class="p-1 hover:bg-black/10 rounded-full transition-colors text-outline">
-                <span class="material-symbols-outlined">close</span>
+            <button onclick="closeMasterModal()" class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all">
+                <span class="material-symbols-outlined text-lg">close</span>
             </button>
         </div>
 
-        <div class="flex items-center gap-2 bg-white/50 p-2 rounded-xl border border-white/60">
-            <span class="material-symbols-outlined text-outline text-sm ml-2">search</span>
-            <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Buscar usuário por nome ou código..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
-        </div>
+        <div class="flex flex-1 min-h-0 bg-white/35">
+            <aside class="w-56 border-r border-white/50 bg-white/25 p-4 flex flex-col gap-2">
+                <button id="master-tab-users" onclick="switchMasterView('users')" class="master-nav-btn bg-primary text-white shadow-sm w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left">
+                    <span class="material-symbols-outlined text-base">group</span>
+                    Usuários
+                </button>
+                <button id="master-tab-create" onclick="switchMasterView('create')" class="master-nav-btn hover:bg-white/60 text-on-surface w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors">
+                    <span class="material-symbols-outlined text-base">person_add</span>
+                    Novo usuário
+                </button>
+                <div class="mt-auto rounded-2xl bg-amber-50/80 border border-amber-200 p-3 text-[10px] text-amber-900 leading-relaxed">
+                    <div class="font-black uppercase tracking-wide mb-1">Acesso Master</div>
+                    As alterações administrativas são verificadas no servidor antes de serem aplicadas.
+                </div>
+            </aside>
 
-        <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
-            <table class="w-full text-left text-xs">
-                <thead>
-                    <tr class="border-b border-white/40 text-outline">
-                        <th class="pb-2 font-bold">Usuário</th>
-                        <th class="pb-2 font-bold">Código</th>
-                        <th class="pb-2 font-bold">Permissão (Role)</th>
-                        <th class="pb-2 font-bold text-right">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="master-users-tbody" class="divide-y divide-white/30">
-                    <!-- Gerado dinamicamente -->
-                </tbody>
-            </table>
+            <section class="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-6">
+                <div id="master-view-users">
+                    <div class="flex items-center justify-between gap-4 mb-5">
+                        <div>
+                            <h3 class="text-xl font-bold text-on-surface">Usuários cadastrados</h3>
+                            <p class="text-xs text-outline mt-1">Acompanhe as contas existentes e o estado de acesso.</p>
+                        </div>
+                        <button onclick="switchMasterView('create')" class="gel-button text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md">
+                            <span class="material-symbols-outlined text-base relative z-10">person_add</span>
+                            <span class="relative z-10">Novo usuário</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 mb-5">
+                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
+                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Total</div>
+                            <div id="master-stat-total" class="text-2xl font-black text-primary mt-1">0</div>
+                        </div>
+                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
+                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Ativos</div>
+                            <div id="master-stat-active" class="text-2xl font-black text-green-700 mt-1">0</div>
+                        </div>
+                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
+                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Bloqueados</div>
+                            <div id="master-stat-banned" class="text-2xl font-black text-red-600 mt-1">0</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 bg-white/60 p-2.5 rounded-2xl border border-white/70 mb-4 shadow-sm">
+                        <span class="material-symbols-outlined text-outline text-base ml-1">search</span>
+                        <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Buscar por nome ou usuário..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
+                    </div>
+
+                    <div id="master-users-list" class="space-y-2"></div>
+                </div>
+
+                <div id="master-view-create" class="hidden max-w-3xl mx-auto">
+                    <div class="mb-5">
+                        <button onclick="switchMasterView('users')" class="text-xs text-primary font-bold flex items-center gap-1 mb-3 hover:underline">
+                            <span class="material-symbols-outlined text-sm">arrow_back</span>
+                            Voltar para usuários
+                        </button>
+                        <h3 class="text-xl font-bold text-on-surface">Criar novo usuário</h3>
+                        <p class="text-xs text-outline mt-1">A conta será criada no Supabase Auth e vinculada automaticamente ao GetChat.</p>
+                    </div>
+
+                    <form id="master-create-user-form" onsubmit="handleMasterCreateUser(event)" class="space-y-5">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome completo</label>
+                                <input id="master-new-fullname" required type="text" placeholder="Ex.: Marcos da Silva" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome de exibição</label>
+                                <input id="master-new-displayname" required type="text" placeholder="Ex.: Marcos" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Usuário</label>
+                                <input id="master-new-username" required minlength="3" maxlength="40" type="text" placeholder="Ex.: marcos.silva" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm lowercase"/>
+                                <p class="text-[10px] text-outline mt-1">Use letras, números, ponto, hífen ou underline.</p>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Senha inicial</label>
+                                <input id="master-new-password" required minlength="8" type="password" placeholder="Mínimo de 8 caracteres" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Data de nascimento</label>
+                                <input id="master-new-birthdate" type="date" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                            </div>
+                            <div class="flex items-end">
+                                <label class="w-full flex items-center justify-between bg-white/60 border border-white/80 rounded-xl px-4 py-3 cursor-pointer">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-primary">groups</span>
+                                        <div>
+                                            <div class="text-xs font-bold text-on-surface">Sala Geral</div>
+                                            <div class="text-[10px] text-outline">Liberar acesso imediatamente</div>
+                                        </div>
+                                    </div>
+                                    <input id="master-new-general-access" type="checkbox" class="rounded text-primary focus:ring-primary w-5 h-5"/>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl bg-white/50 border border-white/70 p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h4 class="text-xs font-black text-on-surface">Contatos permitidos</h4>
+                                    <p class="text-[10px] text-outline mt-0.5">Cada seleção cria uma permissão mútua de visualização e conversa.</p>
+                                </div>
+                                <span id="master-contact-count" class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-1 rounded-full">0 selecionados</span>
+                            </div>
+                            <div id="master-new-contacts-list" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1"></div>
+                        </div>
+
+                        <div id="master-create-feedback" class="hidden rounded-xl px-4 py-3 text-xs font-bold"></div>
+
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button type="button" onclick="resetMasterCreateForm(); switchMasterView('users')" class="px-4 py-2.5 rounded-xl bg-white/60 hover:bg-white/80 border border-white text-xs font-bold text-on-surface transition-colors">Cancelar</button>
+                            <button id="master-create-submit" type="submit" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-2 shadow-md">
+                                <span class="material-symbols-outlined text-base relative z-10">person_add</span>
+                                <span class="relative z-10">Criar usuário</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
         </div>
     </div>
 </div>
@@ -846,81 +954,213 @@
             return;
         }
         document.getElementById("master-modal").classList.remove("hidden");
+        switchMasterView('users');
         await loadMasterUsersList();
     }
 
-    function closeMasterModal() { document.getElementById("master-modal").classList.add("hidden"); }
+    function closeMasterModal() {
+        document.getElementById("master-modal").classList.add("hidden");
+    }
+
+    function switchMasterView(view) {
+        const usersView = document.getElementById('master-view-users');
+        const createView = document.getElementById('master-view-create');
+        const usersTab = document.getElementById('master-tab-users');
+        const createTab = document.getElementById('master-tab-create');
+
+        const isUsers = view === 'users';
+        usersView.classList.toggle('hidden', !isUsers);
+        createView.classList.toggle('hidden', isUsers);
+
+        usersTab.className = `master-nav-btn w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors ${isUsers ? 'bg-primary text-white shadow-sm' : 'hover:bg-white/60 text-on-surface'}`;
+        createTab.className = `master-nav-btn w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors ${!isUsers ? 'bg-primary text-white shadow-sm' : 'hover:bg-white/60 text-on-surface'}`;
+
+        if (!isUsers) renderMasterContactOptions();
+    }
 
     async function loadMasterUsersList() {
-        const { data, error } = await _supabase.from('profiles').select('*').order('nome_completo', { ascending: true });
-        if (error) {
-            alert("Erro ao carregar lista: " + error.message);
+        const { data: profiles, error: profilesError } = await _supabase
+            .from('profiles')
+            .select('id, username, nome_completo, nome_exibicao, avatar_url, is_master, is_banned, created_at')
+            .order('nome_completo', { ascending: true });
+
+        if (profilesError) {
+            alert("Erro ao carregar usuários: " + profilesError.message);
             return;
         }
-        masterUsersCache = data || [];
+
+        const { data: groupPermissions, error: groupError } = await _supabase
+            .from('group_permissions')
+            .select('user_id, can_access_general');
+
+        if (groupError) {
+            alert("Erro ao carregar permissões: " + groupError.message);
+            return;
+        }
+
+        const groupMap = new Map((groupPermissions || []).map(item => [item.user_id, item.can_access_general]));
+        masterUsersCache = (profiles || []).map(profile => ({
+            ...profile,
+            can_access_general: profile.is_master || groupMap.get(profile.id) === true
+        }));
+
+        updateMasterStats();
         renderMasterUserList(masterUsersCache);
+        renderMasterContactOptions();
+    }
+
+    function updateMasterStats() {
+        document.getElementById('master-stat-total').textContent = masterUsersCache.length;
+        document.getElementById('master-stat-active').textContent = masterUsersCache.filter(u => !u.is_banned).length;
+        document.getElementById('master-stat-banned').textContent = masterUsersCache.filter(u => u.is_banned).length;
     }
 
     function renderMasterUserList(users) {
-        const tbody = document.getElementById("master-users-tbody");
-        tbody.innerHTML = "";
+        const container = document.getElementById("master-users-list");
+        container.innerHTML = "";
+
+        if (!users.length) {
+            container.innerHTML = `<div class="text-center text-xs text-outline bg-white/40 rounded-2xl p-8 border border-white/60">Nenhum usuário encontrado.</div>`;
+            return;
+        }
 
         users.forEach(u => {
-            const tr = document.createElement("tr");
-            tr.className = "hover:bg-white/40 transition-colors";
-
             const isSelf = u.id === currentUserProfile.id;
-            const canEditRole = currentUserProfile.role === 'master' && !isSelf;
-            const canBan = !isSelf && (currentUserProfile.role === 'master' || (currentUserProfile.role === 'admin' && u.role === 'user'));
-
-            tr.innerHTML = `
-                <td class="py-2.5 font-bold text-on-surface flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs overflow-hidden">
-                        ${u.avatar_url ? `<img src="${u.avatar_url}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
+            const card = document.createElement('div');
+            card.className = 'flex items-center justify-between gap-4 bg-white/60 hover:bg-white/75 border border-white/70 rounded-2xl px-4 py-3 shadow-sm transition-colors';
+            card.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden border border-primary/10 flex-shrink-0">
+                        ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined">person</span>`}
                     </div>
-                    <span>${escapeHtml(u.nome_completo)}</span>
-                </td>
-                <td class="py-2.5 font-mono font-bold text-primary text-xs">${escapeHtml(u.codigo_acesso)}</td>
-                <td class="py-2.5">
-                    ${canEditRole ? `
-                        <select onchange="updateUserRole('${u.id}', this.value)" class="text-xs bg-white/80 border border-white rounded-lg py-1 px-2 font-semibold focus:ring-primary">
-                            <option value="user" ${u.role === 'user' ? 'selected' : ''}>Usuário</option>
-                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            <option value="master" ${u.role === 'master' ? 'selected' : ''}>Master</option>
-                        </select>
-                    ` : `<span class="font-bold uppercase text-[10px] px-2 py-0.5 rounded ${u.role === 'master' ? 'bg-amber-200 text-amber-900' : u.role === 'admin' ? 'bg-purple-200 text-purple-900' : 'bg-gray-200 text-gray-800'}">${u.role || 'user'}</span>`}
-                </td>
-                <td class="py-2.5 text-right">
-                    ${canBan ? `
-                        <button onclick="toggleUserBan('${u.id}', ${!u.is_banned})" class="px-2.5 py-1 rounded-lg text-xs font-bold transition-all shadow-sm ${u.is_banned ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'}">
-                            ${u.is_banned ? 'Desbanir' : 'Banir'}
-                        </button>
-                    ` : `<span class="text-outline text-[11px] italic">${isSelf ? 'Sua Conta' : 'Protegido'}</span>`}
-                </td>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-on-surface truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</span>
+                            ${u.is_master ? `<span class="text-[9px] uppercase font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Master</span>` : ''}
+                            ${u.is_banned ? `<span class="text-[9px] uppercase font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Bloqueado</span>` : `<span class="text-[9px] uppercase font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Ativo</span>`}
+                        </div>
+                        <div class="text-[10px] text-outline mt-0.5">@${escapeHtml(u.username)} · ${u.can_access_general ? 'Sala Geral liberada' : 'Sem acesso à Sala Geral'}</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    ${isSelf ? `<span class="text-[10px] text-outline italic px-2">Sua conta</span>` : `<span class="material-symbols-outlined text-outline text-lg">more_horiz</span>`}
+                </div>
             `;
-            tbody.appendChild(tr);
+            container.appendChild(card);
         });
     }
 
     function filterMasterUserList() {
-        const query = document.getElementById("master-search-input").value.toLowerCase();
-        const filtered = masterUsersCache.filter(u => 
-            u.nome_completo.toLowerCase().includes(query) || 
-            u.codigo_acesso.toLowerCase().includes(query)
+        const query = document.getElementById("master-search-input").value.trim().toLowerCase();
+        const filtered = masterUsersCache.filter(u =>
+            (u.nome_completo || '').toLowerCase().includes(query) ||
+            (u.nome_exibicao || '').toLowerCase().includes(query) ||
+            (u.username || '').toLowerCase().includes(query)
         );
         renderMasterUserList(filtered);
     }
 
-    async function updateUserRole(userId, newRole) {
-        const { error } = await _supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-        if (error) alert("Erro ao atualizar papel: " + error.message);
-        else await loadMasterUsersList();
+    function renderMasterContactOptions() {
+        const container = document.getElementById('master-new-contacts-list');
+        if (!container) return;
+        const users = masterUsersCache.filter(u => !u.is_banned);
+
+        if (!users.length) {
+            container.innerHTML = `<p class="col-span-2 text-[11px] text-outline italic">Nenhum contato disponível.</p>`;
+            updateMasterContactCount();
+            return;
+        }
+
+        container.innerHTML = users.map(u => `
+            <label class="flex items-center gap-3 bg-white/60 hover:bg-white/80 border border-white/70 rounded-xl px-3 py-2 cursor-pointer transition-colors">
+                <input type="checkbox" name="master-contact" value="${u.id}" onchange="updateMasterContactCount()" class="rounded text-primary focus:ring-primary"/>
+                <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+                    ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-base">person</span>`}
+                </div>
+                <div class="min-w-0">
+                    <div class="text-[11px] font-bold text-on-surface truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</div>
+                    <div class="text-[9px] text-outline truncate">@${escapeHtml(u.username)}</div>
+                </div>
+            </label>
+        `).join('');
+        updateMasterContactCount();
     }
 
-    async function toggleUserBan(userId, targetBanStatus) {
-        const { error } = await _supabase.from('profiles').update({ is_banned: targetBanStatus }).eq('id', userId);
-        if (error) alert("Erro ao alterar banimento: " + error.message);
-        else await loadMasterUsersList();
+    function updateMasterContactCount() {
+        const count = document.querySelectorAll('input[name="master-contact"]:checked').length;
+        const badge = document.getElementById('master-contact-count');
+        if (badge) badge.textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
+    }
+
+    function showMasterCreateFeedback(message, type = 'error') {
+        const feedback = document.getElementById('master-create-feedback');
+        feedback.textContent = message;
+        feedback.className = `rounded-xl px-4 py-3 text-xs font-bold ${type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`;
+        feedback.classList.remove('hidden');
+    }
+
+    function resetMasterCreateForm() {
+        const form = document.getElementById('master-create-user-form');
+        if (form) form.reset();
+        const feedback = document.getElementById('master-create-feedback');
+        if (feedback) feedback.classList.add('hidden');
+        updateMasterContactCount();
+    }
+
+    async function handleMasterCreateUser(event) {
+        event.preventDefault();
+
+        const submitButton = document.getElementById('master-create-submit');
+        const feedback = document.getElementById('master-create-feedback');
+        feedback.classList.add('hidden');
+
+        const contactIds = Array.from(document.querySelectorAll('input[name="master-contact"]:checked')).map(input => input.value);
+        const payload = {
+            username: document.getElementById('master-new-username').value,
+            password: document.getElementById('master-new-password').value,
+            nome_completo: document.getElementById('master-new-fullname').value,
+            nome_exibicao: document.getElementById('master-new-displayname').value,
+            data_nascimento: document.getElementById('master-new-birthdate').value || null,
+            can_access_general: document.getElementById('master-new-general-access').checked,
+            contact_ids: contactIds
+        };
+
+        submitButton.disabled = true;
+        submitButton.classList.add('opacity-60', 'cursor-wait');
+        submitButton.querySelector('span:last-child').textContent = 'Criando...';
+
+        try {
+            const { data, error } = await _supabase.functions.invoke('create-user', { body: payload });
+
+            if (error) {
+                let message = error.message || 'Não foi possível criar o usuário.';
+                if (error.context) {
+                    try {
+                        const body = await error.context.json();
+                        message = body.error || message;
+                    } catch (_) {}
+                }
+                throw new Error(message);
+            }
+
+            if (!data?.success) {
+                throw new Error(data?.error || 'A função não confirmou a criação do usuário.');
+            }
+
+            showMasterCreateFeedback(`Usuário @${data.user.username} criado com sucesso.`, 'success');
+            resetMasterCreateForm();
+            await loadMasterUsersList();
+
+            setTimeout(() => {
+                switchMasterView('users');
+            }, 900);
+        } catch (error) {
+            showMasterCreateFeedback(error.message || 'Erro inesperado ao criar usuário.');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.classList.remove('opacity-60', 'cursor-wait');
+            submitButton.querySelector('span:last-child').textContent = 'Criar usuário';
+        }
     }
 
     function toggleDarkMode(isDark) {
