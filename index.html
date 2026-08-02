@@ -665,9 +665,10 @@
     let currentUserProfile = null;
     let mainGroup = "geral";
     let activeChatRoom = "geral";
-    let activeDMTargetUser = null;
+    let activeDMTargetUser = null; // Objeto do perfil selecionado
+    let visibleProfilesMap = new Map(); // Perfis que a RLS permite visualizar
     
-    let onlineUsersMap = new Map();
+    let onlineUsersMap = new Map(); // Chaveada pelo UUID do perfil
     let unreadCounts = new Map();
     let isInitialLoad = true;
     let typingTimeout = null;
@@ -732,6 +733,50 @@
         icon.textContent = showPassword ? 'visibility_off' : 'visibility';
     }
 
+    async function loadVisibleProfiles() {
+        const { data, error } = await _supabase
+            .from('profiles')
+            .select('id, username, nome_exibicao, avatar_url, is_master, is_banned')
+            .eq('is_banned', false)
+            .order('nome_exibicao', { ascending: true });
+
+        if (error) {
+            console.error('Erro ao carregar contatos visíveis:', error);
+            throw new Error('Não foi possível carregar os contatos autorizados.');
+        }
+
+        visibleProfilesMap.clear();
+        (data || []).forEach(profile => visibleProfilesMap.set(profile.id, profile));
+
+        if (currentUserProfile?.id) {
+            visibleProfilesMap.set(currentUserProfile.id, currentUserProfile);
+        }
+    }
+
+    function getProfileById(userId) {
+        if (!userId) return null;
+        if (currentUserProfile?.id === userId) return currentUserProfile;
+        return visibleProfilesMap.get(userId) || null;
+    }
+
+    function getMessageSenderName(msg) {
+        const profile = getProfileById(msg.remetente_id);
+        return profile?.nome_exibicao || profile?.username || 'Usuário';
+    }
+
+    function isMessageInActiveChat(msg) {
+        if (!msg) return false;
+
+        if (activeDMTargetUser) {
+            if (msg.grupo !== null) return false;
+            const participants = new Set([msg.remetente_id, msg.destinatario_id]);
+            return participants.has(currentUserProfile.id)
+                && participants.has(activeDMTargetUser.id);
+        }
+
+        return msg.grupo === mainGroup;
+    }
+
     async function loadAuthenticatedProfile(authUser) {
         const { data: profile, error } = await _supabase
             .from('profiles')
@@ -750,6 +795,7 @@
 
         currentUserProfile = profile;
         currentUser = profile.nome_exibicao;
+        await loadVisibleProfiles();
         mainGroup = 'geral';
         activeChatRoom = mainGroup;
     }
@@ -1189,7 +1235,7 @@
         if (presenceChannel) _supabase.removeChannel(presenceChannel);
 
         presenceChannel = _supabase.channel(`global-presence-${mainGroup}`, {
-            config: { presence: { key: currentUser } }
+            config: { presence: { key: currentUserProfile.id } }
         });
 
         presenceChannel
@@ -1198,13 +1244,18 @@
                 const previousCount = onlineUsersMap.size;
                 onlineUsersMap.clear();
 
-                Object.keys(state).forEach(key => {
-                    const entries = state[key];
-                    if (entries && entries.length > 0) {
-                        const userObj = entries[0];
-                        if (userObj.username && userObj.username !== currentUser) {
-                            onlineUsersMap.set(userObj.username, userObj);
-                        }
+                Object.values(state).forEach(entries => {
+                    if (!entries || entries.length === 0) return;
+                    const userObj = entries[0];
+                    const userId = userObj.userId;
+
+                    // Só mantém usuários cujo perfil foi liberado pela RLS.
+                    if (
+                        userId
+                        && userId !== currentUserProfile.id
+                        && visibleProfilesMap.has(userId)
+                    ) {
+                        onlineUsersMap.set(userId, userObj);
                     }
                 });
 
@@ -1215,30 +1266,63 @@
                 renderOnlineUsersList();
             })
             .on('broadcast', { event: 'typing' }, payload => {
-                if (payload.payload.username !== currentUser && payload.payload.room === activeChatRoom) {
-                    showTypingIndicator(payload.payload.username);
+                const typingUserId = payload.payload.userId;
+                const targetProfile = getProfileById(typingUserId);
+
+                if (
+                    typingUserId !== currentUserProfile.id
+                    && payload.payload.room === getActiveRoomKey()
+                    && targetProfile
+                ) {
+                    showTypingIndicator(targetProfile.nome_exibicao);
                 }
             })
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensagens' }, payload => {
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'mensagens'
+            }, async payload => {
                 if (isInitialLoad) return;
                 const newMsg = payload.new;
 
-                if (newMsg.grupo === activeChatRoom) {
+                if (isMessageInActiveChat(newMsg)) {
                     renderMessage(newMsg, true);
-                } else if (newMsg.usuario !== currentUser) {
-                    incrementUnread(newMsg.grupo);
-                    playSound('message');
+                    return;
                 }
+
+                if (newMsg.remetente_id === currentUserProfile.id) return;
+
+                if (newMsg.grupo === mainGroup) {
+                    incrementUnread(mainGroup);
+                } else if (newMsg.grupo === null) {
+                    const otherUserId = newMsg.remetente_id === currentUserProfile.id
+                        ? newMsg.destinatario_id
+                        : newMsg.remetente_id;
+
+                    if (visibleProfilesMap.has(otherUserId)) {
+                        incrementUnread(getDMRoomName(currentUserProfile.id, otherUserId));
+                    }
+                }
+
+                playSound('message');
             })
-            .subscribe(async (status) => {
+            .subscribe(async status => {
                 if (status === 'SUBSCRIBED') {
                     await presenceChannel.track({
-                        username: currentUser,
+                        userId: currentUserProfile.id,
+                        username: currentUserProfile.username,
+                        displayName: currentUserProfile.nome_exibicao,
                         avatarUrl: currentUserProfile.avatar_url,
                         onlineAt: new Date().toISOString()
                     });
                 }
             });
+    }
+
+    function getActiveRoomKey() {
+        return activeDMTargetUser
+            ? getDMRoomName(currentUserProfile.id, activeDMTargetUser.id)
+            : mainGroup;
     }
 
     function incrementUnread(roomName) {
@@ -1252,13 +1336,13 @@
     }
 
     function updateUnreadBadgesUI() {
-        const badge = document.getElementById("unread-main-group");
+        const badge = document.getElementById('unread-main-group');
         const count = unreadCounts.get(mainGroup) || 0;
         if (count > 0) {
             badge.innerText = count;
-            badge.classList.remove("hidden");
+            badge.classList.remove('hidden');
         } else {
-            badge.classList.add("hidden");
+            badge.classList.add('hidden');
         }
         renderOnlineUsersList();
     }
@@ -1268,31 +1352,36 @@
             presenceChannel.send({
                 type: 'broadcast',
                 event: 'typing',
-                payload: { username: currentUser, room: activeChatRoom }
+                payload: {
+                    userId: currentUserProfile.id,
+                    room: getActiveRoomKey()
+                }
             });
         }
     }
 
     function showTypingIndicator(username) {
-        const indicator = document.getElementById("typing-indicator");
-        document.getElementById("typing-username").innerText = username;
-        indicator.classList.remove("hidden");
+        const indicator = document.getElementById('typing-indicator');
+        document.getElementById('typing-username').innerText = username;
+        indicator.classList.remove('hidden');
 
         if (typingTimeout) clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => indicator.classList.add("hidden"), 2500);
+        typingTimeout = setTimeout(() => indicator.classList.add('hidden'), 2500);
     }
 
     // =======================================================
     // 7. CHAT E RENDERIZAÇÃO
     // =======================================================
-    function getDMRoomName(userA, userB) {
-        return `dm_${[userA, userB].sort().join('_')}`;
+    function getDMRoomName(userAId, userBId) {
+        return `dm_${[userAId, userBId].sort().join('_')}`;
     }
 
-    function startPrivateChat(targetUsername) {
-        if (targetUsername === currentUser) return;
-        activeDMTargetUser = targetUsername;
-        activeChatRoom = getDMRoomName(currentUser, targetUsername);
+    function startPrivateChat(targetUserId) {
+        const targetProfile = visibleProfilesMap.get(targetUserId);
+        if (!targetProfile || targetUserId === currentUserProfile.id) return;
+
+        activeDMTargetUser = targetProfile;
+        activeChatRoom = getDMRoomName(currentUserProfile.id, targetProfile.id);
         clearUnread(activeChatRoom);
         updateChatHeaderUI();
         fetchMessages();
@@ -1310,51 +1399,67 @@
 
     function updateChatHeaderUI() {
         const isPrivate = activeDMTargetUser !== null;
-        document.getElementById("private-badge").classList.toggle("hidden", !isPrivate);
-        document.getElementById("header-chat-title").innerText = isPrivate ? `@${activeDMTargetUser}` : `Sala: ${mainGroup}`;
-        document.getElementById("header-sub-info").innerText = isPrivate ? "Conversa Privada" : "Grupo Público";
-        document.getElementById("chat-type-icon").innerText = isPrivate ? "lock" : "forum";
+        document.getElementById('private-badge').classList.toggle('hidden', !isPrivate);
+        document.getElementById('header-chat-title').innerText = isPrivate
+            ? `@${activeDMTargetUser.nome_exibicao}`
+            : `Sala: ${mainGroup}`;
+        document.getElementById('header-sub-info').innerText = isPrivate
+            ? 'Conversa Privada'
+            : 'Grupo Público';
+        document.getElementById('chat-type-icon').innerText = isPrivate ? 'lock' : 'forum';
     }
 
     function renderOnlineUsersList() {
-        const container = document.getElementById("online-users-list");
-        const badge = document.getElementById("online-count-badge");
-        const filterText = document.getElementById("search-users-input").value.toLowerCase();
+        const container = document.getElementById('online-users-list');
+        const badge = document.getElementById('online-count-badge');
+        const filterText = document.getElementById('search-users-input').value.toLowerCase();
 
-        container.innerHTML = "";
-        const onlineUsersArray = Array.from(onlineUsersMap.keys());
-        badge.innerText = onlineUsersArray.length;
+        container.innerHTML = '';
+        const onlineUserIds = Array.from(onlineUsersMap.keys());
+        badge.innerText = onlineUserIds.length;
 
-        if (onlineUsersArray.length === 0) {
-            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum outro usuário online.</p>`;
+        if (onlineUserIds.length === 0) {
+            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum contato autorizado está online.</p>`;
             return;
         }
 
-        onlineUsersArray.forEach(username => {
-            if (filterText && !username.toLowerCase().includes(filterText)) return;
+        onlineUserIds.forEach(userId => {
+            const profile = visibleProfilesMap.get(userId);
+            if (!profile) return;
 
-            const isCurrentDM = activeDMTargetUser === username;
-            const dmRoom = getDMRoomName(currentUser, username);
+            const searchableText = `${profile.nome_exibicao} ${profile.username}`.toLowerCase();
+            if (filterText && !searchableText.includes(filterText)) return;
+
+            const isCurrentDM = activeDMTargetUser?.id === userId;
+            const dmRoom = getDMRoomName(currentUserProfile.id, userId);
             const unread = unreadCounts.get(dmRoom) || 0;
-            const userData = onlineUsersMap.get(username);
+            const presenceData = onlineUsersMap.get(userId);
+            const avatarUrl = profile.avatar_url || presenceData?.avatarUrl;
 
-            const item = document.createElement("div");
-            item.onclick = () => startPrivateChat(username);
+            const item = document.createElement('div');
+            item.onclick = () => startPrivateChat(userId);
             item.className = `flex items-center justify-between p-2 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
-                isCurrentDM ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm' : 'hover:bg-white/60 text-on-surface'
+                isCurrentDM
+                    ? 'bg-primary/15 border border-primary/30 text-primary font-bold shadow-sm'
+                    : 'hover:bg-white/60 text-on-surface'
             }`;
 
             item.innerHTML = `
                 <div class="flex items-center gap-2 overflow-hidden">
                     <div class="relative flex-shrink-0">
                         <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold overflow-hidden">
-                            ${userData && userData.avatarUrl ? `<img src="${userData.avatarUrl}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-sm">person</span>`}
+                            ${avatarUrl
+                                ? `<img src="${escapeHtml(avatarUrl)}" class="w-full h-full object-cover"/>`
+                                : `<span class="material-symbols-outlined text-sm">person</span>`}
                         </div>
                         <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
                     </div>
-                    <span class="truncate">@${escapeHtml(username)}</span>
+                    <span class="truncate">@${escapeHtml(profile.nome_exibicao)}</span>
                 </div>
-                <div>${unread > 0 ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>` : `<span class="material-symbols-outlined text-sm opacity-60">chat</span>`}</div>
+                <div>${unread > 0
+                    ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>`
+                    : `<span class="material-symbols-outlined text-sm opacity-60">chat</span>`}
+                </div>
             `;
             container.appendChild(item);
         });
@@ -1362,16 +1467,21 @@
 
     function filterUserList() { renderOnlineUsersList(); }
 
-    const chatContainer = document.getElementById("chat-messages");
+    const chatContainer = document.getElementById('chat-messages');
 
     function renderMessage(msg, isRealtime = false) {
-        const isMe = msg.usuario === currentUser;
-        const timeFormatted = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const isMe = msg.remetente_id === currentUserProfile.id;
+        const senderName = getMessageSenderName(msg);
+        const senderProfile = getProfileById(msg.remetente_id);
+        const timeFormatted = new Date(msg.created_at || Date.now()).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
-        if (msg.texto === "__NUDGE__") {
-            const nudgeDiv = document.createElement("div");
-            nudgeDiv.className = "flex justify-center my-2";
-            nudgeDiv.innerHTML = `<div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-base">notifications_active</span><span>${escapeHtml(msg.usuario)} chamou a atenção!</span></div>`;
+        if (msg.texto === '__NUDGE__') {
+            const nudgeDiv = document.createElement('div');
+            nudgeDiv.className = 'flex justify-center my-2';
+            nudgeDiv.innerHTML = `<div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-base">notifications_active</span><span>${escapeHtml(senderName)} chamou a atenção!</span></div>`;
             chatContainer.appendChild(nudgeDiv);
             scrollToBottom();
             if (isRealtime && !isMe) triggerNudgeEffect();
@@ -1380,19 +1490,24 @@
 
         if (isRealtime && !isMe) playSound('message');
 
-        const msgWrapper = document.createElement("div");
+        const msgWrapper = document.createElement('div');
         msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
+        const avatarUrl = senderProfile?.avatar_url;
+
+        const avatarMarkup = avatarUrl
+            ? `<img src="${escapeHtml(avatarUrl)}" class="w-full h-full object-cover"/>`
+            : `<span class="material-symbols-outlined text-base">person</span>`;
 
         msgWrapper.innerHTML = `
-            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
+            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 overflow-hidden">${avatarMarkup}</div>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
-                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(msg.usuario)}</span>
+                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(senderName)}</span>
                 <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group">
-                    <div class="pr-12 pb-1">${formatMessageContent(msg.texto)}</div>
+                    <div class="pr-12 pb-1">${formatMessageContent(msg.texto || '')}</div>
                     <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
                 </div>
             </div>
-            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm"><span class="material-symbols-outlined text-base">person</span></div>` : ''}
+            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm overflow-hidden">${avatarMarkup}</div>` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
@@ -1460,27 +1575,89 @@
 
     async function fetchMessages() {
         isInitialLoad = true;
-        chatContainer.innerHTML = "";
-        const { data } = await _supabase.from("mensagens").select("*").eq("grupo", activeChatRoom).order("id", { ascending: true });
-        if (data) data.forEach(msg => renderMessage(msg, false));
+        chatContainer.innerHTML = '';
+
+        let query = _supabase
+            .from('mensagens')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .order('id', { ascending: true });
+
+        if (activeDMTargetUser) {
+            const currentId = currentUserProfile.id;
+            const targetId = activeDMTargetUser.id;
+            query = query
+                .is('grupo', null)
+                .or(
+                    `and(remetente_id.eq.${currentId},destinatario_id.eq.${targetId}),and(remetente_id.eq.${targetId},destinatario_id.eq.${currentId})`
+                );
+        } else {
+            query = query.eq('grupo', mainGroup);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Erro ao carregar mensagens:', error);
+            chatContainer.innerHTML = `<div class="m-auto text-center text-sm text-red-600 bg-red-50/80 border border-red-200 rounded-xl p-4">Não foi possível carregar as mensagens.<br><span class="text-xs">${escapeHtml(error.message)}</span></div>`;
+            isInitialLoad = false;
+            return;
+        }
+
+        (data || []).forEach(msg => renderMessage(msg, false));
         isInitialLoad = false;
     }
 
     async function sendMessage(textToSend = null) {
-        const input = document.getElementById("message-input");
+        const input = document.getElementById('message-input');
         const texto = textToSend || input.value.trim();
         if (!texto) return;
-        if (!textToSend) input.value = "";
 
-        const payload = { usuario: currentUser, texto: texto, grupo: activeChatRoom };
-        const { error } = await _supabase.from("mensagens").insert([payload]);
-        if (error) renderMessage(payload, true);
+        const payload = activeDMTargetUser
+            ? {
+                remetente_id: currentUserProfile.id,
+                destinatario_id: activeDMTargetUser.id,
+                grupo: null,
+                texto
+            }
+            : {
+                remetente_id: currentUserProfile.id,
+                destinatario_id: null,
+                grupo: mainGroup,
+                texto
+            };
+
+        const { error } = await _supabase.from('mensagens').insert(payload);
+
+        if (error) {
+            console.error('Erro ao enviar mensagem:', error);
+            alert(`Não foi possível enviar a mensagem: ${error.message}`);
+            return;
+        }
+
+        if (!textToSend) input.value = '';
     }
 
     async function sendNudge() {
-        const payload = { usuario: currentUser, texto: "__NUDGE__", grupo: activeChatRoom };
-        const { error } = await _supabase.from("mensagens").insert([payload]);
-        if (error) renderMessage(payload, true);
+        const payload = activeDMTargetUser
+            ? {
+                remetente_id: currentUserProfile.id,
+                destinatario_id: activeDMTargetUser.id,
+                grupo: null,
+                texto: '__NUDGE__'
+            }
+            : {
+                remetente_id: currentUserProfile.id,
+                destinatario_id: null,
+                grupo: mainGroup,
+                texto: '__NUDGE__'
+            };
+
+        const { error } = await _supabase.from('mensagens').insert(payload);
+
+        if (error) {
+            console.error('Erro ao enviar chamar atenção:', error);
+            alert(`Não foi possível chamar atenção: ${error.message}`);
+        }
     }
 
     document.getElementById("message-input").addEventListener("keypress", (e) => {
