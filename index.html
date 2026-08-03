@@ -1521,7 +1521,12 @@
         processedIncomingMessageIds.add(newMsg.id);
 
         const isFromMe = newMsg.remetente_id === currentUserProfile.id;
+        const isNudge = newMsg.texto === '__NUDGE__';
 
+        /*
+         * Quando a conversa está aberta, renderMessage() cuida tanto do som
+         * correto quanto do efeito visual do chamar atenção.
+         */
         if (isMessageInActiveChat(newMsg)) {
             renderMessage(newMsg, source !== 'history');
             return;
@@ -1538,7 +1543,11 @@
             }
         }
 
-        playSound('message');
+        /*
+         * Antes todo evento fora da conversa ativa tocava message.mp3,
+         * inclusive o Nudge. Agora cada evento mantém sua identidade sonora.
+         */
+        playSound(isNudge ? 'nudge' : 'message');
     }
 
     async function syncMissedMessages() {
