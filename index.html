@@ -630,42 +630,139 @@
     // =======================================================
     // 1. ÁUDIOS E GERENCIAMENTO DE CONFIGURAÇÕES
     // =======================================================
-    const SOUNDS = {
-        message: new Audio('sounds/message.mp3'),
-        nudge: new Audio('sounds/nudge.mp3'),
-        online: new Audio('sounds/online.mp3')
-    };
+    const AudioManager = (() => {
+        const paths = {
+            message: 'sounds/message.mp3',
+            nudge: 'sounds/nudge.mp3',
+            online: 'sounds/online.mp3'
+        };
 
-    Object.values(SOUNDS).forEach(audio => {
-        audio.preload = 'auto';
-    });
+        const poolSize = 3;
+        const pools = new Map();
+        const poolIndexes = new Map();
+        const pendingSounds = [];
+        let unlocked = false;
+        let unlocking = false;
 
-    let audioFilesUnlocked = false;
+        function createAudio(type) {
+            const path = paths[type];
+            const audio = new Audio(new URL(path, document.baseURI).href);
+            audio.preload = 'auto';
+            audio.playsInline = true;
+            audio.volume = 1;
+            audio.load();
+            return audio;
+        }
 
-    async function unlockAudioFiles() {
-        if (audioFilesUnlocked) return;
+        function ensurePool(type) {
+            if (!pools.has(type)) {
+                pools.set(type, Array.from({ length: poolSize }, () => createAudio(type)));
+                poolIndexes.set(type, 0);
+            }
+            return pools.get(type);
+        }
 
-        const attempts = Object.values(SOUNDS).map(async audio => {
-            const originalVolume = audio.volume;
-            audio.volume = 0;
+        Object.keys(paths).forEach(ensurePool);
+
+        function nextAudio(type) {
+            const pool = ensurePool(type);
+            const currentIndex = poolIndexes.get(type) || 0;
+            const audio = pool[currentIndex];
+            poolIndexes.set(type, (currentIndex + 1) % pool.length);
+            return audio;
+        }
+
+        async function unlock() {
+            if (unlocking) return;
+            unlocking = true;
 
             try {
-                await audio.play();
-                audio.pause();
-                audio.currentTime = 0;
-            } catch (_) {
-                // Alguns navegadores só liberam o áudio após outra interação.
+                const attempts = [];
+
+                for (const pool of pools.values()) {
+                    for (const audio of pool) {
+                        attempts.push((async () => {
+                            const previousMuted = audio.muted;
+                            audio.muted = true;
+                            try {
+                                audio.currentTime = 0;
+                                await audio.play();
+                                audio.pause();
+                                audio.currentTime = 0;
+                            } catch (_) {
+                                // Uma nova interação poderá liberar o áudio.
+                            } finally {
+                                audio.muted = previousMuted;
+                            }
+                        })());
+                    }
+                }
+
+                await Promise.allSettled(attempts);
+                unlocked = true;
+                console.info('[Áudio] Sistema de notificações preparado.');
+
+                if (pendingSounds.length > 0) {
+                    const pending = pendingSounds.splice(0, pendingSounds.length);
+                    for (const type of pending) {
+                        await play(type, { allowQueue: false });
+                    }
+                }
             } finally {
-                audio.volume = originalVolume;
+                unlocking = false;
             }
+        }
+
+        async function play(type, { allowQueue = true } = {}) {
+            if (!paths[type]) return false;
+
+            const audio = nextAudio(type);
+
+            try {
+                audio.pause();
+                audio.muted = false;
+                audio.volume = 1;
+                audio.currentTime = 0;
+
+                if (audio.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+                    audio.load();
+                }
+
+                await audio.play();
+                console.debug(`[Áudio] ${type} reproduzido.`);
+                return true;
+            } catch (error) {
+                const errorName = error?.name || 'AudioError';
+                console.warn(`[Áudio] Falha ao reproduzir ${paths[type]} (${errorName}).`, error);
+
+                if (allowQueue && (errorName === 'NotAllowedError' || !unlocked)) {
+                    if (pendingSounds.length < 5) pendingSounds.push(type);
+                    unlocked = false;
+                }
+
+                return false;
+            }
+        }
+
+        function warmup() {
+            for (const pool of pools.values()) {
+                for (const audio of pool) {
+                    if (audio.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+                        try { audio.load(); } catch (_) {}
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('pointerdown', unlock, { passive: true });
+        document.addEventListener('keydown', unlock);
+        window.addEventListener('focus', warmup);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') warmup();
         });
 
-        await Promise.allSettled(attempts);
-        audioFilesUnlocked = true;
-    }
-
-    document.addEventListener('pointerdown', unlockAudioFiles, { once: true });
-    document.addEventListener('keydown', unlockAudioFiles, { once: true });
+        return { play, unlock, warmup };
+    })();
 
     let userSettings = {
         soundsEnabled: true,
@@ -676,16 +773,17 @@
     };
 
     function playSound(type) {
-        if (!userSettings.soundsEnabled && type !== 'online') return;
-        if (type === 'online' && (!userSettings.soundsEnabled || !userSettings.onlineSoundEnabled)) return;
+        if (!userSettings.soundsEnabled && type !== 'online') {
+            console.debug(`[Áudio] ${type} ignorado: sons desativados.`);
+            return;
+        }
 
-        const audio = SOUNDS[type];
-        if (!audio) return;
+        if (type === 'online' && (!userSettings.soundsEnabled || !userSettings.onlineSoundEnabled)) {
+            console.debug('[Áudio] online ignorado: aviso de entrada desativado.');
+            return;
+        }
 
-        audio.currentTime = 0;
-        audio.play().catch(error => {
-            console.warn(`Não foi possível reproduzir sounds/${type}.mp3:`, error);
-        });
+        AudioManager.play(type);
     }
 
     // =======================================================
