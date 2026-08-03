@@ -710,6 +710,11 @@
     let messageSubscription = null;
     let profileSubscription = null;
     let messageFallbackTimer = null;
+    let messageReconnectTimer = null;
+    let messageReconnectAttempts = 0;
+    let messagesRealtimeReady = false;
+    let presenceRealtimeReady = false;
+    let realtimeLifecycleBound = false;
     let lastObservedMessageId = 0;
     const renderedMessageIds = new Set();
     const processedIncomingMessageIds = new Set();
@@ -920,6 +925,15 @@
             clearInterval(messageFallbackTimer);
             messageFallbackTimer = null;
         }
+
+        if (messageReconnectTimer) {
+            clearTimeout(messageReconnectTimer);
+            messageReconnectTimer = null;
+        }
+
+        messagesRealtimeReady = false;
+        presenceRealtimeReady = false;
+        messageReconnectAttempts = 0;
 
         await _supabase.auth.signOut();
         currentUser = '';
@@ -1281,8 +1295,13 @@
     // =======================================================
     // 6. REALTIME ENGINE & PRESENÇA
     // =======================================================
-    function setupRealtimeEngine() {
-        if (presenceChannel) _supabase.removeChannel(presenceChannel);
+    async function setupRealtimeEngine() {
+        presenceRealtimeReady = false;
+
+        if (presenceChannel) {
+            await _supabase.removeChannel(presenceChannel);
+            presenceChannel = null;
+        }
 
         presenceChannel = _supabase.channel(`global-presence-${mainGroup}`, {
             config: { presence: { key: currentUserProfile.id } }
@@ -1299,7 +1318,6 @@
                     const userObj = entries[0];
                     const userId = userObj.userId;
 
-                    // Só mantém usuários cujo perfil foi liberado pela RLS.
                     if (
                         userId
                         && userId !== currentUserProfile.id
@@ -1328,14 +1346,21 @@
                 }
             })
             .subscribe(async status => {
-                if (status === 'SUBSCRIBED') {
-                    await presenceChannel.track({
-                        userId: currentUserProfile.id,
-                        username: currentUserProfile.username,
-                        displayName: currentUserProfile.nome_exibicao,
-                        avatarUrl: currentUserProfile.avatar_url,
-                        onlineAt: new Date().toISOString()
-                    });
+                presenceRealtimeReady = status === 'SUBSCRIBED';
+                console.info(`[Realtime presença] ${status}`);
+
+                if (status === 'SUBSCRIBED' && presenceChannel) {
+                    try {
+                        await presenceChannel.track({
+                            userId: currentUserProfile.id,
+                            username: currentUserProfile.username,
+                            displayName: currentUserProfile.nome_exibicao,
+                            avatarUrl: currentUserProfile.avatar_url,
+                            onlineAt: new Date().toISOString()
+                        });
+                    } catch (error) {
+                        console.warn('[Realtime presença] Falha ao registrar presença:', error);
+                    }
                 }
             });
     }
@@ -1385,21 +1410,73 @@
         (data || []).forEach(msg => processIncomingMessage(msg, 'fallback'));
     }
 
-    async function setupMessageRealtime() {
-        if (messageSubscription) _supabase.removeChannel(messageSubscription);
-        if (messageFallbackTimer) clearInterval(messageFallbackTimer);
+    function scheduleMessageRealtimeReconnect(reason) {
+        if (!currentUserProfile?.id || messageReconnectTimer) return;
 
-        const { data: latestRows } = await _supabase
-            .from('mensagens')
-            .select('id')
-            .order('id', { ascending: false })
-            .limit(1);
-        if (latestRows?.[0]?.id) {
-            lastObservedMessageId = Math.max(lastObservedMessageId, Number(latestRows[0].id));
+        const delays = [2000, 5000, 10000, 20000, 30000];
+        const delay = delays[Math.min(messageReconnectAttempts, delays.length - 1)];
+        messageReconnectAttempts += 1;
+
+        console.warn(`[Realtime mensagens] ${reason}. Reconectando em ${delay / 1000}s...`);
+        messageReconnectTimer = setTimeout(async () => {
+            messageReconnectTimer = null;
+            await setupMessageRealtime({ reconnecting: true });
+        }, delay);
+    }
+
+    function bindRealtimeLifecycleEvents() {
+        if (realtimeLifecycleBound) return;
+        realtimeLifecycleBound = true;
+
+        window.addEventListener('online', () => {
+            if (!messagesRealtimeReady && currentUserProfile?.id) {
+                messageReconnectAttempts = 0;
+                scheduleMessageRealtimeReconnect('Internet restabelecida');
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && currentUserProfile?.id) {
+                syncMissedMessages();
+                if (!messagesRealtimeReady) {
+                    scheduleMessageRealtimeReconnect('Aba reativada');
+                }
+            }
+        });
+    }
+
+    async function setupMessageRealtime({ reconnecting = false } = {}) {
+        messagesRealtimeReady = false;
+        bindRealtimeLifecycleEvents();
+
+        if (messageReconnectTimer && !reconnecting) {
+            clearTimeout(messageReconnectTimer);
+            messageReconnectTimer = null;
+        }
+
+        if (messageSubscription) {
+            await _supabase.removeChannel(messageSubscription);
+            messageSubscription = null;
+        }
+
+        if (!messageFallbackTimer) {
+            messageFallbackTimer = setInterval(syncMissedMessages, 5000);
+        }
+
+        if (!reconnecting) {
+            const { data: latestRows } = await _supabase
+                .from('mensagens')
+                .select('id')
+                .order('id', { ascending: false })
+                .limit(1);
+
+            if (latestRows?.[0]?.id) {
+                lastObservedMessageId = Math.max(lastObservedMessageId, Number(latestRows[0].id));
+            }
         }
 
         messageSubscription = _supabase
-            .channel(`messages-${currentUserProfile.id}-${Date.now()}`)
+            .channel(`messages-${currentUserProfile.id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -1408,14 +1485,24 @@
                 processIncomingMessage(payload.new, 'realtime');
             })
             .subscribe(status => {
-                console.info('Realtime de mensagens:', status);
-                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    console.warn('Realtime indisponível; o sincronismo auxiliar continuará ativo.');
+                console.info(`[Realtime mensagens] ${status}`);
+
+                if (status === 'SUBSCRIBED') {
+                    messagesRealtimeReady = true;
+                    messageReconnectAttempts = 0;
+                    if (messageReconnectTimer) {
+                        clearTimeout(messageReconnectTimer);
+                        messageReconnectTimer = null;
+                    }
+                    syncMissedMessages();
+                    return;
+                }
+
+                messagesRealtimeReady = false;
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    scheduleMessageRealtimeReconnect(status);
                 }
             });
-
-        // Rede instável, aba suspensa ou atraso do Realtime não devem exigir troca de tela.
-        messageFallbackTimer = setInterval(syncMissedMessages, 3000);
     }
 
     function getActiveRoomKey() {
@@ -1447,16 +1534,18 @@
     }
 
     function handleTypingEvent() {
-        if (presenceChannel) {
-            presenceChannel.send({
-                type: 'broadcast',
-                event: 'typing',
-                payload: {
-                    userId: currentUserProfile.id,
-                    room: getActiveRoomKey()
-                }
-            });
-        }
+        if (!presenceRealtimeReady || !presenceChannel) return;
+
+        presenceChannel.send({
+            type: 'broadcast',
+            event: 'typing',
+            payload: {
+                userId: currentUserProfile.id,
+                room: getActiveRoomKey()
+            }
+        }).catch(error => {
+            console.warn('[Realtime presença] Não foi possível enviar o evento de digitação:', error);
+        });
     }
 
     function showTypingIndicator(username) {
