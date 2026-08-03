@@ -364,146 +364,206 @@
     </div>
 </div>
 
-<!-- 3. PAINEL MASTER -->
-<div id="master-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md hidden p-4">
-    <div class="glass-window w-full max-w-5xl h-[82vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-white/60">
-        <div class="glossy-header px-6 py-4 flex items-center justify-between text-white">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner">
+
+<!-- 3. PAINEL MASTER — ALPHA 0.3 PREVIEW -->
+<div id="master-modal" class="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-md hidden p-3 md:p-5">
+    <div class="glass-window w-full h-full max-w-[1600px] mx-auto rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-white/60">
+        <header class="glossy-header px-5 md:px-7 py-4 flex items-center justify-between text-white">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shadow-inner flex-shrink-0">
                     <span class="material-symbols-outlined">admin_panel_settings</span>
                 </div>
-                <div>
-                    <h2 class="text-lg font-bold">Painel Master</h2>
-                    <p class="text-[11px] text-white/75">Usuários, acessos e permissões do GetChat</p>
+                <div class="min-w-0">
+                    <h2 class="text-lg md:text-xl font-black truncate">Painel Master</h2>
+                    <p class="text-[11px] text-white/75 truncate">Gerenciamento seguro do GetChat</p>
                 </div>
             </div>
-            <button onclick="closeMasterModal()" class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center transition-all">
-                <span class="material-symbols-outlined text-lg">close</span>
+            <button onclick="requestCloseMasterPanel()" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-bold transition-all">
+                <span class="material-symbols-outlined text-base">arrow_back</span>
+                <span class="hidden sm:inline">Voltar ao chat</span>
             </button>
-        </div>
+        </header>
 
         <div class="flex flex-1 min-h-0 bg-white/35">
-            <aside class="w-56 border-r border-white/50 bg-white/25 p-4 flex flex-col gap-2">
-                <button id="master-tab-users" onclick="switchMasterView('users')" class="master-nav-btn bg-primary text-white shadow-sm w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left">
-                    <span class="material-symbols-outlined text-base">group</span>
+            <aside class="hidden md:flex w-52 lg:w-60 border-r border-white/50 bg-white/25 p-4 flex-col gap-2">
+                <button class="bg-primary text-white shadow-sm w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-bold text-left">
+                    <span class="material-symbols-outlined text-lg">group</span>
                     Usuários
                 </button>
-                <button id="master-tab-create" onclick="switchMasterView('create')" class="master-nav-btn hover:bg-white/60 text-on-surface w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors">
-                    <span class="material-symbols-outlined text-base">person_add</span>
-                    Novo usuário
+                <button disabled class="opacity-45 w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-bold text-left text-on-surface">
+                    <span class="material-symbols-outlined text-lg">dashboard</span>
+                    Dashboard
+                    <span class="ml-auto text-[8px] uppercase">Em breve</span>
                 </button>
-                <div class="mt-auto rounded-2xl bg-amber-50/80 border border-amber-200 p-3 text-[10px] text-amber-900 leading-relaxed">
-                    <div class="font-black uppercase tracking-wide mb-1">Acesso Master</div>
-                    As alterações administrativas são verificadas no servidor antes de serem aplicadas.
+                <button disabled class="opacity-45 w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-bold text-left text-on-surface">
+                    <span class="material-symbols-outlined text-lg">history</span>
+                    Logs
+                    <span class="ml-auto text-[8px] uppercase">Em breve</span>
+                </button>
+                <button disabled class="opacity-45 w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-bold text-left text-on-surface">
+                    <span class="material-symbols-outlined text-lg">settings</span>
+                    Sistema
+                    <span class="ml-auto text-[8px] uppercase">Em breve</span>
+                </button>
+
+                <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
+                    <div class="text-xs font-black text-on-surface">GetChat</div>
+                    <div class="text-[10px] text-outline mt-1">Alpha 0.3</div>
+                    <div class="text-[10px] text-outline">Build 00018</div>
                 </div>
             </aside>
 
-            <section class="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-6">
-                <div id="master-view-users">
-                    <div class="flex items-center justify-between gap-4 mb-5">
-                        <div>
-                            <h3 class="text-xl font-bold text-on-surface">Usuários cadastrados</h3>
-                            <p class="text-xs text-outline mt-1">Acompanhe as contas existentes e o estado de acesso.</p>
-                        </div>
-                        <button onclick="switchMasterView('create')" class="gel-button text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md">
-                            <span class="material-symbols-outlined text-base relative z-10">person_add</span>
-                            <span class="relative z-10">Novo usuário</span>
-                        </button>
+            <main class="flex-1 min-w-0 flex flex-col">
+                <div class="px-4 md:px-6 py-4 border-b border-white/50 bg-white/20 flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-black text-on-surface">Usuários</h3>
+                        <p class="text-[11px] text-outline">Contas, permissões e visibilidade entre profissionais.</p>
                     </div>
-
-                    <div class="grid grid-cols-3 gap-3 mb-5">
-                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
-                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Total</div>
-                            <div id="master-stat-total" class="text-2xl font-black text-primary mt-1">0</div>
-                        </div>
-                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
-                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Ativos</div>
-                            <div id="master-stat-active" class="text-2xl font-black text-green-700 mt-1">0</div>
-                        </div>
-                        <div class="rounded-2xl bg-white/60 border border-white/70 p-4 shadow-sm">
-                            <div class="text-[10px] uppercase tracking-wider font-bold text-outline">Bloqueados</div>
-                            <div id="master-stat-banned" class="text-2xl font-black text-red-600 mt-1">0</div>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 bg-white/60 p-2.5 rounded-2xl border border-white/70 mb-4 shadow-sm">
-                        <span class="material-symbols-outlined text-outline text-base ml-1">search</span>
-                        <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Buscar por nome ou usuário..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
-                    </div>
-
-                    <div id="master-users-list" class="space-y-2"></div>
+                    <button onclick="startMasterCreateMode()" class="gel-button text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md">
+                        <span class="material-symbols-outlined text-base relative z-10">person_add</span>
+                        <span class="relative z-10">Novo usuário</span>
+                    </button>
                 </div>
 
-                <div id="master-view-create" class="hidden max-w-3xl mx-auto">
-                    <div class="mb-5">
-                        <button onclick="switchMasterView('users')" class="text-xs text-primary font-bold flex items-center gap-1 mb-3 hover:underline">
-                            <span class="material-symbols-outlined text-sm">arrow_back</span>
-                            Voltar para usuários
-                        </button>
-                        <h3 class="text-xl font-bold text-on-surface">Criar novo usuário</h3>
-                        <p class="text-xs text-outline mt-1">A conta será criada no Supabase Auth e vinculada automaticamente ao GetChat.</p>
-                    </div>
+                <div class="flex flex-1 min-h-0">
+                    <!-- LISTA -->
+                    <section class="w-full md:w-[330px] lg:w-[380px] border-r border-white/50 bg-white/25 flex flex-col min-h-0">
+                        <div class="p-4 space-y-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="rounded-xl bg-white/65 border border-white/70 p-2.5">
+                                    <div class="text-[9px] uppercase font-bold text-outline">Total</div>
+                                    <div id="master-stat-total" class="text-xl font-black text-primary">0</div>
+                                </div>
+                                <div class="rounded-xl bg-white/65 border border-white/70 p-2.5">
+                                    <div class="text-[9px] uppercase font-bold text-outline">Ativos</div>
+                                    <div id="master-stat-active" class="text-xl font-black text-green-700">0</div>
+                                </div>
+                                <div class="rounded-xl bg-white/65 border border-white/70 p-2.5">
+                                    <div class="text-[9px] uppercase font-bold text-outline">Bloqueados</div>
+                                    <div id="master-stat-banned" class="text-xl font-black text-red-600">0</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-white/70 p-2.5 rounded-xl border border-white/80 shadow-sm">
+                                <span class="material-symbols-outlined text-outline text-base">search</span>
+                                <input id="master-search-input" oninput="filterMasterUserList()" type="text" placeholder="Nome, exibição ou usuário..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
+                            </div>
+                        </div>
+                        <div id="master-users-list" class="flex-1 overflow-y-auto custom-scrollbar px-3 pb-4 space-y-2"></div>
+                    </section>
 
-                    <form id="master-create-user-form" onsubmit="handleMasterCreateUser(event)" class="space-y-5">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome completo</label>
-                                <input id="master-new-fullname" required type="text" placeholder="Ex.: Marcos da Silva" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                    <!-- ÁREA DE TRABALHO -->
+                    <section class="hidden md:flex flex-1 min-w-0 min-h-0 flex-col bg-white/15" id="master-workspace">
+                        <div id="master-empty-state" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                            <div class="w-20 h-20 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mb-5 border border-primary/10">
+                                <span class="material-symbols-outlined text-4xl">manage_accounts</span>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome de exibição</label>
-                                <input id="master-new-displayname" required type="text" placeholder="Ex.: Marcos" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
+                            <h4 class="text-lg font-black text-on-surface">Selecione um usuário</h4>
+                            <p class="text-xs text-outline mt-2 max-w-sm">Escolha uma conta na lista para consultar dados e, quando necessário, iniciar a edição.</p>
+                        </div>
+
+                        <div id="master-editor" class="hidden flex-1 min-h-0 flex flex-col">
+                            <div class="px-5 md:px-7 py-4 border-b border-white/50 bg-white/25 flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <button onclick="masterMobileBackToList()" class="md:hidden w-9 h-9 rounded-xl bg-white/65 border border-white/75 flex items-center justify-center">
+                                        <span class="material-symbols-outlined">arrow_back</span>
+                                    </button>
+                                    <div id="master-editor-avatar" class="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden border border-primary/10 flex-shrink-0 font-black text-lg"></div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-center gap-2">
+                                            <h4 id="master-editor-title" class="text-base font-black text-on-surface truncate">Usuário</h4>
+                                            <span id="master-editor-badge" class="hidden text-[9px] uppercase font-black px-2 py-0.5 rounded-full"></span>
+                                        </div>
+                                        <p id="master-editor-subtitle" class="text-[10px] text-outline truncate"></p>
+                                    </div>
+                                </div>
+                                <button id="master-edit-btn" onclick="enableMasterEditMode()" class="px-3.5 py-2 rounded-xl bg-white/70 hover:bg-white border border-white/80 text-xs font-bold text-primary flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-base">edit</span>
+                                    Editar
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Usuário</label>
-                                <input id="master-new-username" required minlength="3" maxlength="40" type="text" placeholder="Ex.: marcos.silva" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm lowercase"/>
-                                <p class="text-[10px] text-outline mt-1">Use letras, números, ponto, hífen ou underline.</p>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Senha inicial</label>
-                                <input id="master-new-password" required minlength="8" type="password" placeholder="Mínimo de 8 caracteres" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Data de nascimento</label>
-                                <input id="master-new-birthdate" type="date" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white focus:ring-2 focus:ring-primary/30 text-sm"/>
-                            </div>
-                            <div class="flex items-end">
-                                <label class="w-full flex items-center justify-between bg-white/60 border border-white/80 rounded-xl px-4 py-3 cursor-pointer">
-                                    <div class="flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-primary">groups</span>
+
+                            <div class="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-7 py-5">
+                                <form id="master-user-form" class="max-w-4xl mx-auto space-y-6" onsubmit="saveMasterUser(event)">
+                                    <input type="hidden" id="master-edit-user-id"/>
+
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                         <div>
-                                            <div class="text-xs font-bold text-on-surface">Sala Geral</div>
-                                            <div class="text-[10px] text-outline">Liberar acesso imediatamente</div>
+                                            <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome completo</label>
+                                            <input id="master-edit-fullname" data-master-editable type="text" disabled class="master-form-input w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm disabled:opacity-75 disabled:cursor-default"/>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nome de exibição</label>
+                                            <input id="master-edit-displayname" data-master-editable type="text" disabled class="master-form-input w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm disabled:opacity-75 disabled:cursor-default"/>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Usuário</label>
+                                            <input id="master-edit-username" type="text" disabled class="w-full px-4 py-2.5 rounded-xl bg-slate-100/75 border border-white text-sm opacity-75 cursor-not-allowed"/>
+                                            <p class="text-[10px] text-outline mt-1">O nome de usuário não é alterado nesta etapa.</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Data de nascimento</label>
+                                            <input id="master-edit-birthdate" data-master-editable type="date" disabled class="master-form-input w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm disabled:opacity-75 disabled:cursor-default"/>
+                                        </div>
+                                        <div id="master-create-password-wrap" class="hidden lg:col-span-2">
+                                            <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Senha inicial</label>
+                                            <input id="master-edit-password" minlength="8" type="password" class="master-form-input w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm" placeholder="Mínimo de 8 caracteres"/>
                                         </div>
                                     </div>
-                                    <input id="master-new-general-access" type="checkbox" class="rounded text-primary focus:ring-primary w-5 h-5"/>
-                                </label>
-                            </div>
-                        </div>
 
-                        <div class="rounded-2xl bg-white/50 border border-white/70 p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <div>
-                                    <h4 class="text-xs font-black text-on-surface">Contatos permitidos</h4>
-                                    <p class="text-[10px] text-outline mt-0.5">Cada seleção cria uma permissão mútua de visualização e conversa.</p>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                        <label class="flex items-center justify-between gap-3 bg-white/60 border border-white/75 rounded-2xl p-4 cursor-pointer">
+                                            <div>
+                                                <div class="text-xs font-black text-on-surface">Sala Geral</div>
+                                                <div class="text-[10px] text-outline mt-0.5">Exibe e permite participar da sala pública.</div>
+                                            </div>
+                                            <input id="master-edit-general-access" data-master-editable type="checkbox" disabled class="rounded text-primary focus:ring-primary w-5 h-5"/>
+                                        </label>
+                                        <label class="flex items-center justify-between gap-3 bg-white/60 border border-white/75 rounded-2xl p-4 cursor-pointer">
+                                            <div>
+                                                <div class="text-xs font-black text-on-surface">Conta bloqueada</div>
+                                                <div class="text-[10px] text-outline mt-0.5">O usuário não poderá entrar no GetChat.</div>
+                                            </div>
+                                            <input id="master-edit-banned" data-master-editable type="checkbox" disabled class="rounded text-red-600 focus:ring-red-400 w-5 h-5"/>
+                                        </label>
+                                    </div>
+
+                                    <div class="rounded-2xl bg-white/45 border border-white/70 p-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                                            <div>
+                                                <h5 class="text-xs font-black text-on-surface">Contatos permitidos</h5>
+                                                <p class="text-[10px] text-outline mt-0.5">A permissão é sempre mútua.</p>
+                                            </div>
+                                            <button id="master-toggle-all-contacts" type="button" onclick="toggleAllMasterContacts()" disabled class="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[10px] font-black disabled:opacity-45">
+                                                Selecionar todos
+                                            </button>
+                                        </div>
+                                        <div class="flex items-center gap-2 bg-white/70 p-2.5 rounded-xl border border-white/80 mb-3">
+                                            <span class="material-symbols-outlined text-outline text-base">search</span>
+                                            <input id="master-contact-search" oninput="filterMasterContactOptions()" type="text" placeholder="Pesquisar contato..." class="w-full bg-transparent border-none text-xs focus:outline-none focus:ring-0 text-on-surface"/>
+                                            <span id="master-edit-contact-count" class="text-[9px] bg-primary/10 text-primary font-black px-2 py-1 rounded-full whitespace-nowrap">0 selecionados</span>
+                                        </div>
+                                        <div id="master-edit-contacts-list" class="grid grid-cols-1 xl:grid-cols-2 gap-2 max-h-64 overflow-y-auto custom-scrollbar pr-1"></div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <footer class="px-5 md:px-7 py-3.5 border-t border-white/55 bg-white/35 flex items-center justify-between gap-3">
+                                <div id="master-save-status" class="text-[11px] font-bold text-outline">
+                                    Modo de visualização
                                 </div>
-                                <span id="master-contact-count" class="text-[10px] bg-primary/10 text-primary font-bold px-2 py-1 rounded-full">0 selecionados</span>
-                            </div>
-                            <div id="master-new-contacts-list" class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1"></div>
+                                <div class="flex items-center gap-2">
+                                    <button id="master-cancel-btn" onclick="cancelMasterEdit()" disabled class="px-4 py-2.5 rounded-xl bg-white/70 border border-white/80 text-xs font-bold text-on-surface disabled:opacity-40">
+                                        Cancelar
+                                    </button>
+                                    <button id="master-save-btn" onclick="document.getElementById('master-user-form').requestSubmit()" disabled class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
+                                        <span class="relative z-10">Salvar</span>
+                                    </button>
+                                </div>
+                            </footer>
                         </div>
-
-                        <div id="master-create-feedback" class="hidden rounded-xl px-4 py-3 text-xs font-bold"></div>
-
-                        <div class="flex justify-end gap-2 pt-1">
-                            <button type="button" onclick="resetMasterCreateForm(); switchMasterView('users')" class="px-4 py-2.5 rounded-xl bg-white/60 hover:bg-white/80 border border-white text-xs font-bold text-on-surface transition-colors">Cancelar</button>
-                            <button id="master-create-submit" type="submit" class="gel-button px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-2 shadow-md">
-                                <span class="material-symbols-outlined text-base relative z-10">person_add</span>
-                                <span class="relative z-10">Criar usuário</span>
-                            </button>
-                        </div>
-                    </form>
+                    </section>
                 </div>
-            </section>
+            </main>
         </div>
     </div>
 </div>
@@ -1261,46 +1321,74 @@
         }
     }
 
+
     // =======================================================
-    // 5. MODAIS & PAINEL MASTER
+    // 5. MODAIS & PAINEL MASTER — ALPHA 0.3
     // =======================================================
     function openSettingsModal() { document.getElementById("settings-modal").classList.remove("hidden"); }
     function closeSettingsModal() { document.getElementById("settings-modal").classList.add("hidden"); }
+
+    let masterSelectedUserId = null;
+    let masterOriginalSnapshot = null;
+    let masterEditorMode = 'view'; // view | edit | create
+    let masterCurrentContactIds = [];
+    let masterContactOptionsCache = [];
+    let masterDirty = false;
 
     async function openMasterModal() {
         if (currentUserProfile.is_master !== true) {
             alert("Acesso negado.");
             return;
         }
+
         document.getElementById("master-modal").classList.remove("hidden");
-        switchMasterView('users');
+        resetMasterWorkspace();
         await loadMasterUsersList();
+    }
+
+    function requestCloseMasterPanel() {
+        if (masterDirty) {
+            const discard = confirm("Existem alterações não salvas. Deseja descartá-las e voltar ao chat?");
+            if (!discard) return;
+        }
+        closeMasterModal();
     }
 
     function closeMasterModal() {
         document.getElementById("master-modal").classList.add("hidden");
+        resetMasterWorkspace();
     }
 
-    function switchMasterView(view) {
-        const usersView = document.getElementById('master-view-users');
-        const createView = document.getElementById('master-view-create');
-        const usersTab = document.getElementById('master-tab-users');
-        const createTab = document.getElementById('master-tab-create');
+    function resetMasterWorkspace() {
+        masterSelectedUserId = null;
+        masterOriginalSnapshot = null;
+        masterEditorMode = 'view';
+        masterCurrentContactIds = [];
+        masterContactOptionsCache = [];
+        masterDirty = false;
 
-        const isUsers = view === 'users';
-        usersView.classList.toggle('hidden', !isUsers);
-        createView.classList.toggle('hidden', isUsers);
+        const empty = document.getElementById('master-empty-state');
+        const editor = document.getElementById('master-editor');
+        const workspace = document.getElementById('master-workspace');
 
-        usersTab.className = `master-nav-btn w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors ${isUsers ? 'bg-primary text-white shadow-sm' : 'hover:bg-white/60 text-on-surface'}`;
-        createTab.className = `master-nav-btn w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-left transition-colors ${!isUsers ? 'bg-primary text-white shadow-sm' : 'hover:bg-white/60 text-on-surface'}`;
+        if (empty) empty.classList.remove('hidden');
+        if (editor) editor.classList.add('hidden');
+        if (workspace) {
+            workspace.classList.add('hidden');
+            workspace.classList.remove('flex');
+            if (window.innerWidth >= 768) {
+                workspace.classList.remove('hidden');
+                workspace.classList.add('flex');
+            }
+        }
 
-        if (!isUsers) renderMasterContactOptions();
+        updateMasterSaveState();
     }
 
     async function loadMasterUsersList() {
         const { data: profiles, error: profilesError } = await _supabase
             .from('profiles')
-            .select('id, username, nome_completo, nome_exibicao, avatar_url, is_master, is_banned, created_at')
+            .select('id, username, nome_completo, nome_exibicao, data_nascimento, avatar_url, is_master, is_banned, created_at')
             .order('nome_completo', { ascending: true });
 
         if (profilesError) {
@@ -1324,8 +1412,7 @@
         }));
 
         updateMasterStats();
-        renderMasterUserList(masterUsersCache);
-        renderMasterContactOptions();
+        filterMasterUserList();
     }
 
     function updateMasterStats() {
@@ -1344,33 +1431,40 @@
         }
 
         users.forEach(u => {
-            const isSelf = u.id === currentUserProfile.id;
-            const card = document.createElement('div');
-            card.className = 'flex items-center justify-between gap-4 bg-white/60 hover:bg-white/75 border border-white/70 rounded-2xl px-4 py-3 shadow-sm transition-colors';
-            card.innerHTML = `
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden border border-primary/10 flex-shrink-0">
-                        ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined">person</span>`}
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-bold text-on-surface truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</span>
-                            ${u.is_master ? `<span class="text-[9px] uppercase font-black bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Master</span>` : ''}
-                            ${u.is_banned ? `<span class="text-[9px] uppercase font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Bloqueado</span>` : `<span class="text-[9px] uppercase font-black bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Ativo</span>`}
-                        </div>
-                        <div class="text-[10px] text-outline mt-0.5">@${escapeHtml(u.username)} · ${u.can_access_general ? 'Sala Geral liberada' : 'Sem acesso à Sala Geral'}</div>
-                    </div>
+            const selected = u.id === masterSelectedUserId;
+            const label = u.is_master ? 'Master' : (u.is_banned ? 'Bloqueado' : (u.can_access_general ? 'Ativo · Sala Geral' : 'Ativo · Sem Sala Geral'));
+            const initial = escapeHtml((u.nome_exibicao || u.nome_completo || u.username || '?').trim().charAt(0).toUpperCase());
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.onclick = () => selectMasterUser(u.id);
+            button.className = `w-full flex items-center gap-3 text-left rounded-2xl px-3 py-3 border transition-all ${
+                selected
+                    ? 'bg-primary text-white border-primary shadow-md'
+                    : 'bg-white/60 hover:bg-white/80 border-white/70 text-on-surface'
+            }`;
+
+            button.innerHTML = `
+                <div class="w-11 h-11 rounded-2xl ${selected ? 'bg-white/20 text-white border-white/20' : 'bg-primary/10 text-primary border-primary/10'} flex items-center justify-center overflow-hidden border flex-shrink-0 font-black">
+                    ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" alt="" class="w-full h-full object-cover"/>` : `<span>${initial}</span>`}
                 </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    ${isSelf ? `<span class="text-[10px] text-outline italic px-2">Sua conta</span>` : `<span class="material-symbols-outlined text-outline text-lg">more_horiz</span>`}
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-sm font-black truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</span>
+                        ${u.is_master ? `<span class="text-[8px] uppercase font-black ${selected ? 'bg-white/20 text-white' : 'bg-amber-200 text-amber-900'} px-1.5 py-0.5 rounded-full">Master</span>` : ''}
+                    </div>
+                    <div class="text-[10px] ${selected ? 'text-white/75' : 'text-outline'} truncate">@${escapeHtml(u.username)}</div>
+                    <div class="text-[9px] ${selected ? 'text-white/70' : (u.is_banned ? 'text-red-600' : 'text-outline')} mt-0.5">${escapeHtml(label)}</div>
                 </div>
+                <span class="material-symbols-outlined text-base ${selected ? 'text-white' : 'text-outline'}">chevron_right</span>
             `;
-            container.appendChild(card);
+            container.appendChild(button);
         });
     }
 
     function filterMasterUserList() {
-        const query = document.getElementById("master-search-input").value.trim().toLowerCase();
+        const input = document.getElementById("master-search-input");
+        const query = (input?.value || '').trim().toLowerCase();
         const filtered = masterUsersCache.filter(u =>
             (u.nome_completo || '').toLowerCase().includes(query) ||
             (u.nome_exibicao || '').toLowerCase().includes(query) ||
@@ -1379,127 +1473,416 @@
         renderMasterUserList(filtered);
     }
 
+    async function selectMasterUser(userId) {
+        if (masterDirty) {
+            const discard = confirm("Existem alterações não salvas. Deseja descartá-las?");
+            if (!discard) return;
+        }
+
+        const user = masterUsersCache.find(item => item.id === userId);
+        if (!user) return;
+
+        masterSelectedUserId = userId;
+        masterEditorMode = 'view';
+        masterDirty = false;
+
+        const { data: visibilityRows, error } = await _supabase
+            .from('user_visibility')
+            .select('target_user_id')
+            .eq('viewer_user_id', userId);
+
+        if (error) {
+            alert("Erro ao carregar contatos permitidos: " + error.message);
+            return;
+        }
+
+        masterCurrentContactIds = (visibilityRows || []).map(row => row.target_user_id);
+        masterContactOptionsCache = masterUsersCache.filter(item => item.id !== userId && !item.is_banned);
+
+        populateMasterEditor(user);
+        renderMasterContactOptions();
+        setMasterEditorEnabled(false);
+        showMasterEditor();
+        filterMasterUserList();
+    }
+
+    function showMasterEditor() {
+        document.getElementById('master-empty-state').classList.add('hidden');
+        document.getElementById('master-editor').classList.remove('hidden');
+
+        const workspace = document.getElementById('master-workspace');
+        workspace.classList.remove('hidden');
+        workspace.classList.add('flex');
+
+        if (window.innerWidth < 768) {
+            document.querySelector('#master-modal section.w-full.md\:w-\[330px\]')?.classList.add('hidden');
+        }
+    }
+
+    function masterMobileBackToList() {
+        if (masterDirty) {
+            const discard = confirm("Existem alterações não salvas. Deseja descartá-las?");
+            if (!discard) return;
+        }
+        const listSection = document.querySelector('#master-modal section.w-full.md\:w-\[330px\]');
+        const workspace = document.getElementById('master-workspace');
+        listSection?.classList.remove('hidden');
+        workspace?.classList.add('hidden');
+        workspace?.classList.remove('flex');
+    }
+
+    function populateMasterEditor(user) {
+        document.getElementById('master-edit-user-id').value = user.id;
+        document.getElementById('master-edit-fullname').value = user.nome_completo || '';
+        document.getElementById('master-edit-displayname').value = user.nome_exibicao || '';
+        document.getElementById('master-edit-username').value = user.username || '';
+        document.getElementById('master-edit-birthdate').value = user.data_nascimento || '';
+        document.getElementById('master-edit-general-access').checked = user.can_access_general === true;
+        document.getElementById('master-edit-banned').checked = user.is_banned === true;
+        document.getElementById('master-edit-banned').disabled = user.is_master === true;
+        document.getElementById('master-create-password-wrap').classList.add('hidden');
+        document.getElementById('master-edit-password').value = '';
+
+        document.getElementById('master-editor-title').textContent = user.nome_exibicao || user.nome_completo || user.username;
+        document.getElementById('master-editor-subtitle').textContent = `@${user.username}`;
+
+        const avatar = document.getElementById('master-editor-avatar');
+        const initial = (user.nome_exibicao || user.nome_completo || user.username || '?').trim().charAt(0).toUpperCase();
+        avatar.innerHTML = user.avatar_url
+            ? `<img src="${escapeHtml(user.avatar_url)}" alt="" class="w-full h-full object-cover"/>`
+            : `<span>${escapeHtml(initial)}</span>`;
+
+        const badge = document.getElementById('master-editor-badge');
+        badge.classList.remove('hidden', 'bg-amber-200', 'text-amber-900', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+        if (user.is_master) {
+            badge.textContent = 'Master';
+            badge.classList.add('bg-amber-200', 'text-amber-900');
+        } else if (user.is_banned) {
+            badge.textContent = 'Bloqueado';
+            badge.classList.add('bg-red-100', 'text-red-700');
+        } else {
+            badge.textContent = 'Ativo';
+            badge.classList.add('bg-green-100', 'text-green-700');
+        }
+
+        masterOriginalSnapshot = captureMasterFormSnapshot();
+        updateMasterSaveState();
+    }
+
     function renderMasterContactOptions() {
-        const container = document.getElementById('master-new-contacts-list');
+        const container = document.getElementById('master-edit-contacts-list');
         if (!container) return;
-        const users = masterUsersCache.filter(u => !u.is_banned);
+
+        const search = (document.getElementById('master-contact-search')?.value || '').trim().toLowerCase();
+        const users = masterContactOptionsCache.filter(u =>
+            !search ||
+            (u.nome_completo || '').toLowerCase().includes(search) ||
+            (u.nome_exibicao || '').toLowerCase().includes(search) ||
+            (u.username || '').toLowerCase().includes(search)
+        );
 
         if (!users.length) {
-            container.innerHTML = `<p class="col-span-2 text-[11px] text-outline italic">Nenhum contato disponível.</p>`;
+            container.innerHTML = `<p class="text-[11px] text-outline italic p-3">Nenhum contato encontrado.</p>`;
             updateMasterContactCount();
             return;
         }
 
-        container.innerHTML = users.map(u => `
-            <label class="flex items-center gap-3 bg-white/60 hover:bg-white/80 border border-white/70 rounded-xl px-3 py-2 cursor-pointer transition-colors">
-                <input type="checkbox" name="master-contact" value="${u.id}" onchange="updateMasterContactCount()" class="rounded text-primary focus:ring-primary"/>
-                <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0">
-                    ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" class="w-full h-full object-cover"/>` : `<span class="material-symbols-outlined text-base">person</span>`}
-                </div>
-                <div class="min-w-0">
-                    <div class="text-[11px] font-bold text-on-surface truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</div>
-                    <div class="text-[9px] text-outline truncate">@${escapeHtml(u.username)}</div>
-                </div>
-            </label>
-        `).join('');
+        container.innerHTML = users.map(u => {
+            const checked = masterCurrentContactIds.includes(u.id);
+            const initial = escapeHtml((u.nome_exibicao || u.nome_completo || u.username || '?').trim().charAt(0).toUpperCase());
+            return `
+                <label class="flex items-center gap-3 bg-white/60 hover:bg-white/80 border border-white/70 rounded-xl px-3 py-2 cursor-pointer transition-colors">
+                    <input type="checkbox" name="master-edit-contact" value="${u.id}" ${checked ? 'checked' : ''} ${masterEditorMode === 'view' ? 'disabled' : ''} onchange="handleMasterContactChange()" class="rounded text-primary focus:ring-primary"/>
+                    <div class="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0 font-black text-[11px]">
+                        ${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" alt="" class="w-full h-full object-cover"/>` : `<span>${initial}</span>`}
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-[11px] font-bold text-on-surface truncate">${escapeHtml(u.nome_exibicao || u.nome_completo)}</div>
+                        <div class="text-[9px] text-outline truncate">@${escapeHtml(u.username)}</div>
+                    </div>
+                </label>
+            `;
+        }).join('');
+
+        updateMasterContactCount();
+    }
+
+    function filterMasterContactOptions() {
+        renderMasterContactOptions();
+    }
+
+    function handleMasterContactChange() {
+        masterCurrentContactIds = Array.from(document.querySelectorAll('input[name="master-edit-contact"]:checked')).map(input => input.value);
+        markMasterDirty();
         updateMasterContactCount();
     }
 
     function updateMasterContactCount() {
-        const count = document.querySelectorAll('input[name="master-contact"]:checked').length;
-        const badge = document.getElementById('master-contact-count');
+        const count = masterCurrentContactIds.length;
+        const badge = document.getElementById('master-edit-contact-count');
         if (badge) badge.textContent = `${count} selecionado${count === 1 ? '' : 's'}`;
-    }
 
-    function showMasterCreateFeedback(message, type = 'error') {
-        const feedback = document.getElementById('master-create-feedback');
-        feedback.textContent = message;
-        feedback.className = `rounded-xl px-4 py-3 text-xs font-bold ${type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200'}`;
-        feedback.classList.remove('hidden');
-    }
-
-    function resetMasterCreateForm() {
-        const form = document.getElementById('master-create-user-form');
-        if (form) form.reset();
-        const feedback = document.getElementById('master-create-feedback');
-        if (feedback) feedback.classList.add('hidden');
-        updateMasterContactCount();
-    }
-
-    async function handleMasterCreateUser(event) {
-        event.preventDefault();
-
-        const submitButton = document.getElementById('master-create-submit');
-        const feedback = document.getElementById('master-create-feedback');
-        feedback.classList.add('hidden');
-
-        const contactIds = Array.from(document.querySelectorAll('input[name="master-contact"]:checked')).map(input => input.value);
-        const payload = {
-            username: document.getElementById('master-new-username').value,
-            password: document.getElementById('master-new-password').value,
-            nome_completo: document.getElementById('master-new-fullname').value,
-            nome_exibicao: document.getElementById('master-new-displayname').value,
-            data_nascimento: document.getElementById('master-new-birthdate').value || null,
-            can_access_general: document.getElementById('master-new-general-access').checked,
-            contact_ids: contactIds
-        };
-
-        submitButton.disabled = true;
-        submitButton.classList.add('opacity-60', 'cursor-wait');
-        submitButton.querySelector('span:last-child').textContent = 'Criando...';
-
-        try {
-            const { data, error } = await _supabase.functions.invoke('create-user', { body: payload });
-
-            if (error) {
-                let message = error.message || 'Não foi possível criar o usuário.';
-                if (error.context) {
-                    try {
-                        const body = await error.context.json();
-                        message = body.error || message;
-                    } catch (_) {}
-                }
-                throw new Error(message);
-            }
-
-            if (!data?.success) {
-                throw new Error(data?.error || 'A função não confirmou a criação do usuário.');
-            }
-
-            showMasterCreateFeedback(`Usuário @${data.user.username} criado com sucesso.`, 'success');
-            resetMasterCreateForm();
-            await loadMasterUsersList();
-
-            setTimeout(() => {
-                switchMasterView('users');
-            }, 900);
-        } catch (error) {
-            showMasterCreateFeedback(error.message || 'Erro inesperado ao criar usuário.');
-        } finally {
-            submitButton.disabled = false;
-            submitButton.classList.remove('opacity-60', 'cursor-wait');
-            submitButton.querySelector('span:last-child').textContent = 'Criar usuário';
+        const toggleButton = document.getElementById('master-toggle-all-contacts');
+        if (toggleButton) {
+            const total = masterContactOptionsCache.length;
+            toggleButton.textContent = total > 0 && count === total
+                ? `✓ ${count} contatos selecionados`
+                : 'Selecionar todos';
         }
     }
 
-    function toggleDarkMode(isDark) {
-        userSettings.darkMode = isDark;
-        if (isDark) document.body.classList.add('dark');
-        else document.body.classList.remove('dark');
+    function toggleAllMasterContacts() {
+        if (masterEditorMode === 'view') return;
+        const allIds = masterContactOptionsCache.map(user => user.id);
+        const allSelected = allIds.length > 0 && allIds.every(id => masterCurrentContactIds.includes(id));
+        masterCurrentContactIds = allSelected ? [] : allIds;
+        renderMasterContactOptions();
+        markMasterDirty();
     }
 
-    function changeChatBackground(bgClass) {
-        userSettings.bgStyle = bgClass;
-        document.getElementById("chat-messages").className = `flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar ${bgClass}`;
+    function enableMasterEditMode() {
+        if (!masterSelectedUserId) return;
+        masterEditorMode = 'edit';
+        setMasterEditorEnabled(true);
+        document.getElementById('master-edit-btn').classList.add('hidden');
+        document.getElementById('master-save-status').textContent = '● Editando';
+        document.getElementById('master-cancel-btn').disabled = false;
+        updateMasterSaveState();
     }
 
-    function changeUIScale(scale) {
-        userSettings.uiScale = scale;
-        document.getElementById("app-window").style.transform = scale === 'large' ? "scale(1.05)" : "scale(1)";
+    function setMasterEditorEnabled(enabled) {
+        document.querySelectorAll('[data-master-editable]').forEach(element => {
+            if (element.id === 'master-edit-banned') {
+                const selected = masterUsersCache.find(user => user.id === masterSelectedUserId);
+                element.disabled = !enabled || selected?.is_master === true;
+            } else {
+                element.disabled = !enabled;
+            }
+        });
+
+        document.getElementById('master-toggle-all-contacts').disabled = !enabled;
+        document.querySelectorAll('input[name="master-edit-contact"]').forEach(input => input.disabled = !enabled);
     }
 
-    function toggleSoundMute(enabled) { userSettings.soundsEnabled = enabled; }
-    function toggleOnlineSound(enabled) { userSettings.onlineSoundEnabled = enabled; }
+    function captureMasterFormSnapshot() {
+        return {
+            user_id: document.getElementById('master-edit-user-id').value || null,
+            nome_completo: document.getElementById('master-edit-fullname').value.trim(),
+            nome_exibicao: document.getElementById('master-edit-displayname').value.trim(),
+            username: document.getElementById('master-edit-username').value.trim(),
+            data_nascimento: document.getElementById('master-edit-birthdate').value || null,
+            can_access_general: document.getElementById('master-edit-general-access').checked,
+            is_banned: document.getElementById('master-edit-banned').checked,
+            contact_ids: [...masterCurrentContactIds].sort()
+        };
+    }
+
+    function snapshotsEqual(a, b) {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function markMasterDirty() {
+        if (masterEditorMode === 'view') return;
+        const current = captureMasterFormSnapshot();
+        masterDirty = !snapshotsEqual(masterOriginalSnapshot, current);
+        updateMasterSaveState();
+    }
+
+    function updateMasterSaveState() {
+        const saveButton = document.getElementById('master-save-btn');
+        const cancelButton = document.getElementById('master-cancel-btn');
+        const status = document.getElementById('master-save-status');
+        if (!saveButton || !cancelButton || !status) return;
+
+        if (masterEditorMode === 'create') {
+            saveButton.disabled = false;
+            cancelButton.disabled = false;
+            status.textContent = masterDirty ? '● Alterações pendentes' : '● Novo usuário';
+            return;
+        }
+
+        if (masterEditorMode === 'edit') {
+            saveButton.disabled = !masterDirty;
+            cancelButton.disabled = false;
+            status.textContent = masterDirty ? '● Alterações não salvas' : '● Editando';
+            return;
+        }
+
+        saveButton.disabled = true;
+        cancelButton.disabled = true;
+        status.textContent = 'Modo de visualização';
+    }
+
+    function cancelMasterEdit() {
+        if (masterEditorMode === 'create') {
+            resetMasterWorkspace();
+            filterMasterUserList();
+            return;
+        }
+
+        if (!masterSelectedUserId) return;
+        const user = masterUsersCache.find(item => item.id === masterSelectedUserId);
+        if (!user) return;
+
+        masterCurrentContactIds = [...(masterOriginalSnapshot?.contact_ids || [])];
+        populateMasterEditor(user);
+        renderMasterContactOptions();
+        masterEditorMode = 'view';
+        masterDirty = false;
+        setMasterEditorEnabled(false);
+        document.getElementById('master-edit-btn').classList.remove('hidden');
+        updateMasterSaveState();
+    }
+
+    function startMasterCreateMode() {
+        if (masterDirty) {
+            const discard = confirm("Existem alterações não salvas. Deseja descartá-las?");
+            if (!discard) return;
+        }
+
+        masterSelectedUserId = null;
+        masterEditorMode = 'create';
+        masterDirty = false;
+        masterCurrentContactIds = [];
+        masterContactOptionsCache = masterUsersCache.filter(user => !user.is_banned);
+
+        document.getElementById('master-edit-user-id').value = '';
+        document.getElementById('master-edit-fullname').value = '';
+        document.getElementById('master-edit-displayname').value = '';
+        document.getElementById('master-edit-username').value = '';
+        document.getElementById('master-edit-birthdate').value = '';
+        document.getElementById('master-edit-password').value = '';
+        document.getElementById('master-edit-general-access').checked = true;
+        document.getElementById('master-edit-banned').checked = false;
+        document.getElementById('master-edit-banned').disabled = true;
+        document.getElementById('master-create-password-wrap').classList.remove('hidden');
+
+        document.getElementById('master-editor-title').textContent = 'Novo usuário';
+        document.getElementById('master-editor-subtitle').textContent = 'Crie uma conta e defina as permissões iniciais.';
+        document.getElementById('master-editor-avatar').innerHTML = '<span class="material-symbols-outlined">person_add</span>';
+        document.getElementById('master-editor-badge').classList.add('hidden');
+        document.getElementById('master-edit-btn').classList.add('hidden');
+
+        masterOriginalSnapshot = captureMasterFormSnapshot();
+        renderMasterContactOptions();
+        setMasterEditorEnabled(true);
+        document.getElementById('master-edit-username').disabled = false;
+        document.getElementById('master-toggle-all-contacts').disabled = false;
+        showMasterEditor();
+        updateMasterSaveState();
+        filterMasterUserList();
+    }
+
+    async function saveMasterUser(event) {
+        event.preventDefault();
+
+        if (masterEditorMode === 'view') return;
+
+        const saveButton = document.getElementById('master-save-btn');
+        const saveLabel = saveButton.querySelector('span');
+        const originalLabel = saveLabel.textContent;
+
+        const nomeCompleto = document.getElementById('master-edit-fullname').value.trim();
+        const nomeExibicao = document.getElementById('master-edit-displayname').value.trim();
+
+        if (nomeCompleto.length < 2 || nomeExibicao.length < 2) {
+            alert("Nome completo e nome de exibição precisam ter pelo menos 2 caracteres.");
+            return;
+        }
+
+        saveButton.disabled = true;
+        saveButton.classList.add('opacity-60', 'cursor-wait');
+        saveLabel.textContent = 'Salvando...';
+        document.getElementById('master-save-status').textContent = 'Salvando alterações...';
+
+        try {
+            if (masterEditorMode === 'create') {
+                const username = document.getElementById('master-edit-username').value.trim();
+                const password = document.getElementById('master-edit-password').value;
+
+                if (username.length < 3) throw new Error("O usuário precisa ter pelo menos 3 caracteres.");
+                if (password.length < 8) throw new Error("A senha precisa ter pelo menos 8 caracteres.");
+
+                const { data, error } = await _supabase.functions.invoke('create-user', {
+                    body: {
+                        username,
+                        password,
+                        nome_completo: nomeCompleto,
+                        nome_exibicao: nomeExibicao,
+                        data_nascimento: document.getElementById('master-edit-birthdate').value || null,
+                        can_access_general: document.getElementById('master-edit-general-access').checked,
+                        contact_ids: masterCurrentContactIds
+                    }
+                });
+
+                if (error) {
+                    let message = error.message;
+                    try {
+                        const body = await error.context?.json();
+                        if (body?.error) message = body.error;
+                    } catch (_) {}
+                    throw new Error(message);
+                }
+
+                if (data?.error) throw new Error(data.error);
+                await loadMasterUsersList();
+                const created = masterUsersCache.find(user => user.username === username.toLowerCase());
+                if (created) await selectMasterUser(created.id);
+            } else {
+                const payload = {
+                    user_id: masterSelectedUserId,
+                    nome_completo: nomeCompleto,
+                    nome_exibicao: nomeExibicao,
+                    data_nascimento: document.getElementById('master-edit-birthdate').value || null,
+                    is_banned: document.getElementById('master-edit-banned').checked,
+                    can_access_general: document.getElementById('master-edit-general-access').checked,
+                    contact_ids: masterCurrentContactIds
+                };
+
+                const { data, error } = await _supabase.functions.invoke('update-user', { body: payload });
+
+                if (error) {
+                    let message = error.message;
+                    try {
+                        const body = await error.context?.json();
+                        if (body?.error) message = body.error;
+                    } catch (_) {}
+                    throw new Error(message);
+                }
+
+                if (data?.error) throw new Error(data.error);
+
+                await loadMasterUsersList();
+                await selectMasterUser(masterSelectedUserId);
+            }
+
+            masterDirty = false;
+            saveLabel.textContent = '✓ Salvo';
+            document.getElementById('master-save-status').textContent = '✔ Alterações salvas';
+            setTimeout(() => {
+                saveLabel.textContent = 'Salvar';
+                updateMasterSaveState();
+            }, 1600);
+        } catch (error) {
+            console.error('[Painel Master] Falha ao salvar:', error);
+            alert("Não foi possível salvar: " + (error?.message || error));
+            saveLabel.textContent = originalLabel;
+            document.getElementById('master-save-status').textContent = 'Falha ao salvar';
+            updateMasterSaveState();
+        } finally {
+            saveButton.classList.remove('opacity-60', 'cursor-wait');
+            if (saveLabel.textContent === 'Salvando...') saveLabel.textContent = originalLabel;
+        }
+    }
+
+    // Detecta mudanças nos campos do editor sem salvar automaticamente.
+    document.addEventListener('input', event => {
+        if (event.target?.matches('.master-form-input')) markMasterDirty();
+    });
+
+    document.addEventListener('change', event => {
+        if (event.target?.matches('[data-master-editable]')) markMasterDirty();
+    });
 
     // =======================================================
     // 6. REALTIME ENGINE & PRESENÇA
