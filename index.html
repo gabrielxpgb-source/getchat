@@ -75,6 +75,70 @@
             border-color: rgba(255, 255, 255, 0.1);
         }
 
+        /* Contraste consistente para o modo noturno */
+        body.dark .text-on-surface,
+        body.dark .text-on-surface-variant,
+        body.dark .text-outline,
+        body.dark .text-gray-500,
+        body.dark .text-gray-600,
+        body.dark .text-gray-700,
+        body.dark label,
+        body.dark h1,
+        body.dark h2,
+        body.dark h3,
+        body.dark p,
+        body.dark td,
+        body.dark th {
+            color: #e5edf8 !important;
+        }
+        body.dark .text-outline,
+        body.dark .text-gray-500,
+        body.dark .text-gray-600 {
+            color: #aebed2 !important;
+        }
+        body.dark input,
+        body.dark select,
+        body.dark textarea {
+            background: rgba(15, 23, 42, 0.82) !important;
+            color: #f8fafc !important;
+            border-color: rgba(148, 163, 184, 0.42) !important;
+        }
+        body.dark input::placeholder,
+        body.dark textarea::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+        }
+        body.dark option {
+            background: #0f172a;
+            color: #f8fafc;
+        }
+        body.dark .bg-white\/40,
+        body.dark .bg-white\/50,
+        body.dark .bg-white\/60,
+        body.dark .bg-white\/70,
+        body.dark .bg-white\/80,
+        body.dark .glossy-pill {
+            background: rgba(30, 41, 59, 0.78) !important;
+            border-color: rgba(148, 163, 184, 0.28) !important;
+        }
+        body.dark .hover\:bg-white:hover,
+        body.dark .hover\:bg-white\/40:hover,
+        body.dark .hover\:bg-white\/60:hover {
+            background: rgba(51, 65, 85, 0.92) !important;
+        }
+        body.dark table,
+        body.dark tbody,
+        body.dark thead,
+        body.dark tr {
+            border-color: rgba(148, 163, 184, 0.22) !important;
+        }
+        body.dark .message-bubble-outgoing {
+            color: #ffffff;
+        }
+        body.dark #chat-messages {
+            color: #e5edf8;
+        }
+
         .glass-window {
             background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(20px);
@@ -637,16 +701,13 @@
             online: 'sounds/online.mp3'
         };
 
-        const poolSize = 3;
-        const pools = new Map();
-        const poolIndexes = new Map();
+        const templates = new Map();
+        const activePlayers = new Set();
         const pendingSounds = [];
-        let unlocked = false;
-        let unlocking = false;
+        let hasUserInteraction = false;
 
-        function createAudio(type) {
-            const path = paths[type];
-            const audio = new Audio(new URL(path, document.baseURI).href);
+        function createTemplate(type) {
+            const audio = new Audio(new URL(paths[type], document.baseURI).href);
             audio.preload = 'auto';
             audio.playsInline = true;
             audio.volume = 1;
@@ -654,90 +715,51 @@
             return audio;
         }
 
-        function ensurePool(type) {
-            if (!pools.has(type)) {
-                pools.set(type, Array.from({ length: poolSize }, () => createAudio(type)));
-                poolIndexes.set(type, 0);
-            }
-            return pools.get(type);
-        }
+        Object.keys(paths).forEach((type) => {
+            templates.set(type, createTemplate(type));
+        });
 
-        Object.keys(paths).forEach(ensurePool);
+        function markInteraction() {
+            hasUserInteraction = true;
 
-        function nextAudio(type) {
-            const pool = ensurePool(type);
-            const currentIndex = poolIndexes.get(type) || 0;
-            const audio = pool[currentIndex];
-            poolIndexes.set(type, (currentIndex + 1) % pool.length);
-            return audio;
-        }
-
-        async function unlock() {
-            if (unlocking) return;
-            unlocking = true;
-
-            try {
-                const attempts = [];
-
-                for (const pool of pools.values()) {
-                    for (const audio of pool) {
-                        attempts.push((async () => {
-                            const previousMuted = audio.muted;
-                            audio.muted = true;
-                            try {
-                                audio.currentTime = 0;
-                                await audio.play();
-                                audio.pause();
-                                audio.currentTime = 0;
-                            } catch (_) {
-                                // Uma nova interação poderá liberar o áudio.
-                            } finally {
-                                audio.muted = previousMuted;
-                            }
-                        })());
-                    }
+            if (pendingSounds.length > 0) {
+                const pending = pendingSounds.splice(0, pendingSounds.length);
+                for (const type of pending) {
+                    play(type, { allowQueue: false });
                 }
-
-                await Promise.allSettled(attempts);
-                unlocked = true;
-                console.info('[Áudio] Sistema de notificações preparado.');
-
-                if (pendingSounds.length > 0) {
-                    const pending = pendingSounds.splice(0, pendingSounds.length);
-                    for (const type of pending) {
-                        await play(type, { allowQueue: false });
-                    }
-                }
-            } finally {
-                unlocking = false;
             }
         }
 
         async function play(type, { allowQueue = true } = {}) {
-            if (!paths[type]) return false;
+            const template = templates.get(type);
+            if (!template) return false;
 
-            const audio = nextAudio(type);
+            /*
+             * Cada reprodução usa um clone independente. Assim, uma nova
+             * notificação nunca chama pause() em um play() ainda pendente,
+             * eliminando o AbortError observado nos navegadores Chromium.
+             */
+            const player = template.cloneNode(true);
+            player.preload = 'auto';
+            player.playsInline = true;
+            player.volume = 1;
+            activePlayers.add(player);
+
+            const cleanup = () => activePlayers.delete(player);
+            player.addEventListener('ended', cleanup, { once: true });
+            player.addEventListener('error', cleanup, { once: true });
 
             try {
-                audio.pause();
-                audio.muted = false;
-                audio.volume = 1;
-                audio.currentTime = 0;
-
-                if (audio.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-                    audio.load();
-                }
-
-                await audio.play();
+                await player.play();
                 console.debug(`[Áudio] ${type} reproduzido.`);
                 return true;
             } catch (error) {
+                cleanup();
                 const errorName = error?.name || 'AudioError';
                 console.warn(`[Áudio] Falha ao reproduzir ${paths[type]} (${errorName}).`, error);
 
-                if (allowQueue && (errorName === 'NotAllowedError' || !unlocked)) {
+                if (allowQueue && errorName === 'NotAllowedError' && !hasUserInteraction) {
                     if (pendingSounds.length < 5) pendingSounds.push(type);
-                    unlocked = false;
                 }
 
                 return false;
@@ -745,23 +767,21 @@
         }
 
         function warmup() {
-            for (const pool of pools.values()) {
-                for (const audio of pool) {
-                    if (audio.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
-                        try { audio.load(); } catch (_) {}
-                    }
+            for (const template of templates.values()) {
+                if (template.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+                    try { template.load(); } catch (_) {}
                 }
             }
         }
 
-        document.addEventListener('pointerdown', unlock, { passive: true });
-        document.addEventListener('keydown', unlock);
+        document.addEventListener('pointerdown', markInteraction, { passive: true });
+        document.addEventListener('keydown', markInteraction);
         window.addEventListener('focus', warmup);
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') warmup();
         });
 
-        return { play, unlock, warmup };
+        return { play, warmup };
     })();
 
     let userSettings = {
@@ -1097,24 +1117,49 @@
     // 4. UPLOAD DE FOTO DE PERFIL LOCAL
     // =======================================================
     async function uploadAvatarFile(event) {
-        const file = event.target.files[0];
+        const file = event.target.files?.[0];
         if (!file) return;
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `avatar_${currentUserProfile.id}_${Date.now()}.${fileExt}`;
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const maxSizeBytes = 5 * 1024 * 1024;
+
+        if (!allowedTypes.includes(file.type)) {
+            alert('Formato inválido. Use JPG, PNG ou WEBP.');
+            event.target.value = '';
+            return;
+        }
+
+        if (file.size > maxSizeBytes) {
+            alert('A foto deve ter no máximo 5 MB.');
+            event.target.value = '';
+            return;
+        }
+
+        const extensionByMime = {
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'image/webp': 'webp'
+        };
+
+        const fileExt = extensionByMime[file.type];
+        const storagePath = `${currentUserProfile.id}/avatar_${Date.now()}.${fileExt}`;
 
         try {
-            const { data: uploadData, error: uploadError } = await _supabase
+            const { error: uploadError } = await _supabase
                 .storage
                 .from('avatars')
-                .upload(fileName, file, { upsert: true });
+                .upload(storagePath, file, {
+                    upsert: false,
+                    cacheControl: '3600',
+                    contentType: file.type
+                });
 
             if (uploadError) throw uploadError;
 
             const { data: publicUrlData } = _supabase
                 .storage
                 .from('avatars')
-                .getPublicUrl(fileName);
+                .getPublicUrl(storagePath);
 
             const publicUrl = publicUrlData.publicUrl;
 
@@ -1124,14 +1169,19 @@
                 p_avatar_url: publicUrl
             });
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                await _supabase.storage.from('avatars').remove([storagePath]);
+                throw updateError;
+            }
 
             currentUserProfile.avatar_url = publicUrl;
             updateUserAvatarUI(publicUrl);
             alert('Foto de perfil atualizada com sucesso!');
-
         } catch (err) {
+            console.error('[Avatar] Falha no upload:', err);
             alert('Erro ao enviar foto: ' + err.message);
+        } finally {
+            event.target.value = '';
         }
     }
 
