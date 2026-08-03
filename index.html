@@ -630,11 +630,38 @@
     // =======================================================
     // 1. ÁUDIOS E GERENCIAMENTO DE CONFIGURAÇÕES
     // =======================================================
-    const SOUNDS = {
-        message: new Audio('sounds/message.mp3'),
-        nudge: new Audio('sounds/nudge.mp3'),
-        online: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
-    };
+    let audioContext = null;
+
+    function unlockAudio() {
+        try {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') audioContext.resume();
+        } catch (error) {
+            console.warn('Áudio não disponível neste navegador:', error);
+        }
+    }
+
+    function playTone(frequency, duration = 0.12, delay = 0, volume = 0.08) {
+        unlockAudio();
+        if (!audioContext) return;
+
+        const startAt = audioContext.currentTime + delay;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, startAt);
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(volume, startAt + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(startAt);
+        oscillator.stop(startAt + duration + 0.02);
+    }
 
     let userSettings = {
         soundsEnabled: true,
@@ -648,9 +675,16 @@
         if (!userSettings.soundsEnabled && type !== 'online') return;
         if (type === 'online' && (!userSettings.soundsEnabled || !userSettings.onlineSoundEnabled)) return;
 
-        if (SOUNDS[type]) {
-            SOUNDS[type].currentTime = 0;
-            SOUNDS[type].play().catch(() => {});
+        if (type === 'message') {
+            playTone(660, 0.10, 0, 0.07);
+            playTone(880, 0.12, 0.09, 0.06);
+        } else if (type === 'nudge') {
+            playTone(320, 0.10, 0, 0.09);
+            playTone(460, 0.10, 0.10, 0.09);
+            playTone(320, 0.12, 0.20, 0.09);
+        } else if (type === 'online') {
+            playTone(520, 0.08, 0, 0.05);
+            playTone(740, 0.10, 0.08, 0.05);
         }
     }
 
@@ -673,7 +707,12 @@
     let isInitialLoad = true;
     let typingTimeout = null;
     let presenceChannel = null;
+    let messageSubscription = null;
     let profileSubscription = null;
+    let messageFallbackTimer = null;
+    let lastObservedMessageId = 0;
+    const renderedMessageIds = new Set();
+    const processedIncomingMessageIds = new Set();
     let masterUsersCache = [];
 
     // =======================================================
@@ -867,9 +906,19 @@
             presenceChannel = null;
         }
 
+        if (messageSubscription) {
+            await _supabase.removeChannel(messageSubscription);
+            messageSubscription = null;
+        }
+
         if (profileSubscription) {
             await _supabase.removeChannel(profileSubscription);
             profileSubscription = null;
+        }
+
+        if (messageFallbackTimer) {
+            clearInterval(messageFallbackTimer);
+            messageFallbackTimer = null;
         }
 
         await _supabase.auth.signOut();
@@ -891,6 +940,7 @@
         updateChatHeaderUI();
         fetchMessages();
         setupRealtimeEngine();
+        setupMessageRealtime();
         listenToOwnProfileChanges();
     }
 
@@ -1277,35 +1327,6 @@
                     showTypingIndicator(targetProfile.nome_exibicao);
                 }
             })
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'mensagens'
-            }, async payload => {
-                if (isInitialLoad) return;
-                const newMsg = payload.new;
-
-                if (isMessageInActiveChat(newMsg)) {
-                    renderMessage(newMsg, true);
-                    return;
-                }
-
-                if (newMsg.remetente_id === currentUserProfile.id) return;
-
-                if (newMsg.grupo === mainGroup) {
-                    incrementUnread(mainGroup);
-                } else if (newMsg.grupo === null) {
-                    const otherUserId = newMsg.remetente_id === currentUserProfile.id
-                        ? newMsg.destinatario_id
-                        : newMsg.remetente_id;
-
-                    if (visibleProfilesMap.has(otherUserId)) {
-                        incrementUnread(getDMRoomName(currentUserProfile.id, otherUserId));
-                    }
-                }
-
-                playSound('message');
-            })
             .subscribe(async status => {
                 if (status === 'SUBSCRIBED') {
                     await presenceChannel.track({
@@ -1317,6 +1338,84 @@
                     });
                 }
             });
+    }
+
+    function processIncomingMessage(newMsg, source = 'realtime') {
+        if (!newMsg?.id) return;
+        lastObservedMessageId = Math.max(lastObservedMessageId, Number(newMsg.id) || 0);
+
+        if (processedIncomingMessageIds.has(newMsg.id)) return;
+        processedIncomingMessageIds.add(newMsg.id);
+
+        const isFromMe = newMsg.remetente_id === currentUserProfile.id;
+
+        if (isMessageInActiveChat(newMsg)) {
+            renderMessage(newMsg, source !== 'history');
+            return;
+        }
+
+        if (isFromMe) return;
+
+        if (newMsg.grupo === mainGroup) {
+            incrementUnread(mainGroup);
+        } else if (newMsg.grupo === null) {
+            const otherUserId = newMsg.remetente_id;
+            if (visibleProfilesMap.has(otherUserId)) {
+                incrementUnread(getDMRoomName(currentUserProfile.id, otherUserId));
+            }
+        }
+
+        playSound('message');
+    }
+
+    async function syncMissedMessages() {
+        if (!currentUserProfile?.id) return;
+
+        const { data, error } = await _supabase
+            .from('mensagens')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .gt('id', lastObservedMessageId)
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.warn('Fallback de mensagens:', error.message);
+            return;
+        }
+
+        (data || []).forEach(msg => processIncomingMessage(msg, 'fallback'));
+    }
+
+    async function setupMessageRealtime() {
+        if (messageSubscription) _supabase.removeChannel(messageSubscription);
+        if (messageFallbackTimer) clearInterval(messageFallbackTimer);
+
+        const { data: latestRows } = await _supabase
+            .from('mensagens')
+            .select('id')
+            .order('id', { ascending: false })
+            .limit(1);
+        if (latestRows?.[0]?.id) {
+            lastObservedMessageId = Math.max(lastObservedMessageId, Number(latestRows[0].id));
+        }
+
+        messageSubscription = _supabase
+            .channel(`messages-${currentUserProfile.id}-${Date.now()}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'mensagens'
+            }, payload => {
+                processIncomingMessage(payload.new, 'realtime');
+            })
+            .subscribe(status => {
+                console.info('Realtime de mensagens:', status);
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+                    console.warn('Realtime indisponível; o sincronismo auxiliar continuará ativo.');
+                }
+            });
+
+        // Rede instável, aba suspensa ou atraso do Realtime não devem exigir troca de tela.
+        messageFallbackTimer = setInterval(syncMissedMessages, 3000);
     }
 
     function getActiveRoomKey() {
@@ -1470,6 +1569,9 @@
     const chatContainer = document.getElementById('chat-messages');
 
     function renderMessage(msg, isRealtime = false) {
+        if (msg?.id && renderedMessageIds.has(msg.id)) return;
+        if (msg?.id) renderedMessageIds.add(msg.id);
+
         const isMe = msg.remetente_id === currentUserProfile.id;
         const senderName = getMessageSenderName(msg);
         const senderProfile = getProfileById(msg.remetente_id);
@@ -1576,6 +1678,7 @@
     async function fetchMessages() {
         isInitialLoad = true;
         chatContainer.innerHTML = '';
+        renderedMessageIds.clear();
 
         let query = _supabase
             .from('mensagens')
@@ -1603,7 +1706,11 @@
             return;
         }
 
-        (data || []).forEach(msg => renderMessage(msg, false));
+        (data || []).forEach(msg => {
+            lastObservedMessageId = Math.max(lastObservedMessageId, Number(msg.id) || 0);
+            processedIncomingMessageIds.add(msg.id);
+            renderMessage(msg, false);
+        });
         isInitialLoad = false;
     }
 
@@ -1626,12 +1733,22 @@
                 texto
             };
 
-        const { error } = await _supabase.from('mensagens').insert(payload);
+        const { data: insertedMessage, error } = await _supabase
+            .from('mensagens')
+            .insert(payload)
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .single();
 
         if (error) {
             console.error('Erro ao enviar mensagem:', error);
             alert(`Não foi possível enviar a mensagem: ${error.message}`);
             return;
+        }
+
+        if (insertedMessage) {
+            lastObservedMessageId = Math.max(lastObservedMessageId, Number(insertedMessage.id) || 0);
+            processedIncomingMessageIds.add(insertedMessage.id);
+            renderMessage(insertedMessage, false);
         }
 
         if (!textToSend) input.value = '';
@@ -1652,11 +1769,22 @@
                 texto: '__NUDGE__'
             };
 
-        const { error } = await _supabase.from('mensagens').insert(payload);
+        const { data: insertedNudge, error } = await _supabase
+            .from('mensagens')
+            .insert(payload)
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .single();
 
         if (error) {
             console.error('Erro ao enviar chamar atenção:', error);
             alert(`Não foi possível chamar atenção: ${error.message}`);
+            return;
+        }
+
+        if (insertedNudge) {
+            lastObservedMessageId = Math.max(lastObservedMessageId, Number(insertedNudge.id) || 0);
+            processedIncomingMessageIds.add(insertedNudge.id);
+            renderMessage(insertedNudge, false);
         }
     }
 
