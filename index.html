@@ -596,7 +596,7 @@
             </div>
 
             <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-                <div>
+                <div id="public-rooms-section">
                     <h3 class="px-1 text-[10px] font-bold uppercase tracking-wider text-outline/80 mb-1">Salas Públicas</h3>
                     <div id="btn-main-room" onclick="switchToMainGroup()" class="relative flex items-center justify-between p-2 rounded-xl bg-primary text-white font-bold text-xs shadow-sm cursor-pointer transition-all hover:opacity-90">
                         <div class="flex items-center gap-2.5 overflow-hidden">
@@ -815,6 +815,7 @@
 
     let currentUser = "";
     let currentUserProfile = null;
+    let currentUserCanAccessGeneral = false;
     let mainGroup = "geral";
     let activeChatRoom = "geral";
     let activeDMTargetUser = null; // Objeto do perfil selecionado
@@ -952,14 +953,32 @@
 
         if (profile.is_banned) {
             await _supabase.auth.signOut();
-            throw new Error('Esta conta está suspensa. Procure o administrador.');
+            throw new Error('Sua conta foi bloqueada.');
         }
 
         currentUserProfile = profile;
         currentUser = profile.nome_exibicao;
+
+        if (profile.is_master === true) {
+            currentUserCanAccessGeneral = true;
+        } else {
+            const { data: groupPermission, error: groupPermissionError } = await _supabase
+                .from('group_permissions')
+                .select('can_access_general')
+                .eq('user_id', profile.id)
+                .maybeSingle();
+
+            if (groupPermissionError) {
+                console.error('Erro ao carregar permissão da Sala Geral:', groupPermissionError);
+                throw new Error('Não foi possível carregar as permissões da conta.');
+            }
+
+            currentUserCanAccessGeneral = groupPermission?.can_access_general === true;
+        }
+
         await loadVisibleProfiles();
         mainGroup = 'geral';
-        activeChatRoom = mainGroup;
+        activeChatRoom = currentUserCanAccessGeneral ? mainGroup : null;
     }
 
     async function checkSession() {
@@ -1066,14 +1085,56 @@
         document.getElementById("header-user-name").innerText = `@${currentUser}`;
         document.getElementById("sidebar-user-name").innerText = `@${currentUser}`;
         document.getElementById("sidebar-group-name").innerText = `Sala: ${mainGroup}`;
+        applyGeneralRoomVisibility();
 
         updateUserRoleBadge();
         updateUserAvatarUI(currentUserProfile.avatar_url);
         updateChatHeaderUI();
-        fetchMessages();
+        if (currentUserCanAccessGeneral) {
+            fetchMessages();
+        } else {
+            showNoConversationSelected();
+        }
         setupRealtimeEngine();
         setupMessageRealtime();
         listenToOwnProfileChanges();
+    }
+
+
+    function applyGeneralRoomVisibility() {
+        const section = document.getElementById('public-rooms-section');
+        if (section) section.classList.toggle('hidden', !currentUserCanAccessGeneral);
+        updateUnreadBadgesUI();
+    }
+
+    function showNoConversationSelected() {
+        activeDMTargetUser = null;
+        activeChatRoom = null;
+        const chatContainer = document.getElementById('chat-messages');
+        chatContainer.innerHTML = `
+            <div class="m-auto text-center max-w-sm px-6">
+                <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined text-3xl">chat</span>
+                </div>
+                <h3 class="text-sm font-bold text-on-surface">Selecione um contato</h3>
+                <p class="text-xs text-outline mt-1">Escolha um usuário disponível para iniciar uma conversa.</p>
+            </div>`;
+        updateChatHeaderUI();
+        setComposerEnabled(false);
+    }
+
+    function setComposerEnabled(enabled) {
+        const input = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        input.disabled = !enabled;
+        fileInput.disabled = !enabled;
+        input.placeholder = enabled ? 'Digite uma mensagem...' : 'Selecione um contato para conversar';
+        document.querySelectorAll('[onclick="sendMessage()"], [onclick="sendNudge()"], [onclick="toggleEmojiPopover()"]')
+            .forEach(button => {
+                button.disabled = !enabled;
+                button.classList.toggle('opacity-50', !enabled);
+                button.classList.toggle('cursor-not-allowed', !enabled);
+            });
     }
 
     function updateUserRoleBadge() {
@@ -1103,7 +1164,7 @@
             }, (payload) => {
                 const updated = payload.new;
                 if (updated.is_banned) {
-                    alert("Você foi banido pelo Administrador.");
+                    alert("Sua conta foi bloqueada.");
                     handleLogoff();
                     return;
                 }
@@ -1488,6 +1549,7 @@
                 if (
                     typingUserId !== currentUserProfile.id
                     && payload.payload.room === getActiveRoomKey()
+                    && (payload.payload.room !== mainGroup || currentUserCanAccessGeneral)
                     && targetProfile
                 ) {
                     showTypingIndicator(targetProfile.nome_exibicao);
@@ -1535,6 +1597,7 @@
         if (isFromMe) return;
 
         if (newMsg.grupo === mainGroup) {
+            if (!currentUserCanAccessGeneral) return;
             incrementUnread(mainGroup);
         } else if (newMsg.grupo === null) {
             const otherUserId = newMsg.remetente_id;
@@ -1663,9 +1726,10 @@
     }
 
     function getActiveRoomKey() {
-        return activeDMTargetUser
-            ? getDMRoomName(currentUserProfile.id, activeDMTargetUser.id)
-            : mainGroup;
+        if (activeDMTargetUser) {
+            return getDMRoomName(currentUserProfile.id, activeDMTargetUser.id);
+        }
+        return currentUserCanAccessGeneral ? mainGroup : null;
     }
 
     function incrementUnread(roomName) {
@@ -1680,6 +1744,12 @@
 
     function updateUnreadBadgesUI() {
         const badge = document.getElementById('unread-main-group');
+        if (!currentUserCanAccessGeneral) {
+            badge.classList.add('hidden');
+            unreadCounts.delete(mainGroup);
+            renderOnlineUsersList();
+            return;
+        }
         const count = unreadCounts.get(mainGroup) || 0;
         if (count > 0) {
             badge.innerText = count;
@@ -1692,13 +1762,15 @@
 
     function handleTypingEvent() {
         if (!presenceRealtimeReady || !presenceChannel) return;
+        const room = getActiveRoomKey();
+        if (!room) return;
 
         presenceChannel.send({
             type: 'broadcast',
             event: 'typing',
             payload: {
                 userId: currentUserProfile.id,
-                room: getActiveRoomKey()
+                room
             }
         }).catch(error => {
             console.warn('[Realtime presença] Não foi possível enviar o evento de digitação:', error);
@@ -1729,29 +1801,37 @@
         activeChatRoom = getDMRoomName(currentUserProfile.id, targetProfile.id);
         clearUnread(activeChatRoom);
         updateChatHeaderUI();
+        setComposerEnabled(true);
         fetchMessages();
         renderOnlineUsersList();
     }
 
     function switchToMainGroup() {
+        if (!currentUserCanAccessGeneral) return;
         activeDMTargetUser = null;
         activeChatRoom = mainGroup;
         clearUnread(mainGroup);
         updateChatHeaderUI();
+        setComposerEnabled(true);
         fetchMessages();
         renderOnlineUsersList();
     }
 
     function updateChatHeaderUI() {
         const isPrivate = activeDMTargetUser !== null;
+        const noConversation = !isPrivate && !currentUserCanAccessGeneral;
         document.getElementById('private-badge').classList.toggle('hidden', !isPrivate);
-        document.getElementById('header-chat-title').innerText = isPrivate
-            ? `@${activeDMTargetUser.nome_exibicao}`
-            : `Sala: ${mainGroup}`;
-        document.getElementById('header-sub-info').innerText = isPrivate
-            ? 'Conversa Privada'
-            : 'Grupo Público';
-        document.getElementById('chat-type-icon').innerText = isPrivate ? 'lock' : 'forum';
+        document.getElementById('header-chat-title').innerText = noConversation
+            ? 'GetChat'
+            : isPrivate
+                ? `@${activeDMTargetUser.nome_exibicao}`
+                : `Sala: ${mainGroup}`;
+        document.getElementById('header-sub-info').innerText = noConversation
+            ? 'Selecione um contato'
+            : isPrivate
+                ? 'Conversa Privada'
+                : 'Grupo Público';
+        document.getElementById('chat-type-icon').innerText = noConversation ? 'chat' : (isPrivate ? 'lock' : 'forum');
     }
 
     function renderOnlineUsersList() {
@@ -1940,6 +2020,11 @@
                     `and(remetente_id.eq.${currentId},destinatario_id.eq.${targetId}),and(remetente_id.eq.${targetId},destinatario_id.eq.${currentId})`
                 );
         } else {
+            if (!currentUserCanAccessGeneral) {
+                showNoConversationSelected();
+                isInitialLoad = false;
+                return;
+            }
             query = query.eq('grupo', mainGroup);
         }
 
@@ -1964,6 +2049,7 @@
         const input = document.getElementById('message-input');
         const texto = textToSend || input.value.trim();
         if (!texto) return;
+        if (!activeDMTargetUser && !currentUserCanAccessGeneral) return;
 
         const payload = activeDMTargetUser
             ? {
@@ -2001,6 +2087,7 @@
     }
 
     async function sendNudge() {
+        if (!activeDMTargetUser && !currentUserCanAccessGeneral) return;
         const payload = activeDMTargetUser
             ? {
                 remetente_id: currentUserProfile.id,
