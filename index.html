@@ -409,7 +409,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.3</div>
-                    <div class="text-[10px] text-outline">Build 00018</div>
+                    <div class="text-[10px] text-outline">Build 00019</div>
                 </div>
             </aside>
 
@@ -507,6 +507,47 @@
                                         <div id="master-create-password-wrap" class="hidden lg:col-span-2">
                                             <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Senha inicial</label>
                                             <input id="master-edit-password" minlength="8" type="password" class="master-form-input w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm" placeholder="Mínimo de 8 caracteres"/>
+                                        </div>
+                                    </div>
+
+                                    <div id="master-password-section" class="hidden rounded-2xl bg-white/45 border border-white/70 p-4">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                            <div>
+                                                <h5 class="text-xs font-black text-on-surface">Credenciais de acesso</h5>
+                                                <p class="text-[10px] text-outline mt-0.5">O Master pode definir uma nova senha para este usuário.</p>
+                                            </div>
+                                            <button type="button" onclick="generateMasterPassword()" class="px-3 py-2 rounded-xl bg-primary/10 text-primary text-[10px] font-black">
+                                                Gerar senha
+                                            </button>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Nova senha</label>
+                                                <div class="relative">
+                                                    <input id="master-new-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" class="w-full px-4 py-2.5 pr-11 rounded-xl bg-white/75 border border-white text-sm" placeholder="Mínimo de 8 caracteres"/>
+                                                    <button type="button" onclick="toggleMasterPasswordVisibility()" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg hover:bg-white/70 flex items-center justify-center text-outline" title="Mostrar ou ocultar senha">
+                                                        <span id="master-password-eye-icon" class="material-symbols-outlined text-lg">visibility</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-on-surface-variant mb-1.5">Confirmar nova senha</label>
+                                                <input id="master-confirm-password" type="password" minlength="8" maxlength="72" autocomplete="new-password" class="w-full px-4 py-2.5 rounded-xl bg-white/75 border border-white text-sm" placeholder="Repita a nova senha"/>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                            <div id="master-password-status" class="text-[10px] text-outline">A senha atual não pode ser exibida.</div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <button type="button" onclick="copyMasterCredentials()" class="px-3.5 py-2.5 rounded-xl bg-white/70 border border-white/80 text-xs font-bold text-on-surface flex items-center gap-1.5">
+                                                    <span class="material-symbols-outlined text-base">content_copy</span>
+                                                    Copiar credenciais
+                                                </button>
+                                                <button id="master-change-password-btn" type="button" onclick="changeMasterUserPassword()" class="gel-button px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
+                                                    <span class="relative z-10">Alterar senha</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1366,6 +1407,8 @@
         masterCurrentContactIds = [];
         masterContactOptionsCache = [];
         masterDirty = false;
+        document.getElementById('master-password-section')?.classList.add('hidden');
+        clearMasterPasswordFields();
 
         const empty = document.getElementById('master-empty-state');
         const editor = document.getElementById('master-editor');
@@ -1542,6 +1585,8 @@
         document.getElementById('master-edit-banned').disabled = user.is_master === true;
         document.getElementById('master-create-password-wrap').classList.add('hidden');
         document.getElementById('master-edit-password').value = '';
+        document.getElementById('master-password-section').classList.remove('hidden');
+        clearMasterPasswordFields();
 
         document.getElementById('master-editor-title').textContent = user.nome_exibicao || user.nome_completo || user.username;
         document.getElementById('master-editor-subtitle').textContent = `@${user.username}`;
@@ -1756,6 +1801,8 @@
         document.getElementById('master-edit-banned').checked = false;
         document.getElementById('master-edit-banned').disabled = true;
         document.getElementById('master-create-password-wrap').classList.remove('hidden');
+        document.getElementById('master-password-section').classList.add('hidden');
+        clearMasterPasswordFields();
 
         document.getElementById('master-editor-title').textContent = 'Novo usuário';
         document.getElementById('master-editor-subtitle').textContent = 'Crie uma conta e defina as permissões iniciais.';
@@ -1883,6 +1930,170 @@
     document.addEventListener('change', event => {
         if (event.target?.matches('[data-master-editable]')) markMasterDirty();
     });
+
+    function clearMasterPasswordFields() {
+        const password = document.getElementById('master-new-password');
+        const confirm = document.getElementById('master-confirm-password');
+        const status = document.getElementById('master-password-status');
+        const icon = document.getElementById('master-password-eye-icon');
+
+        if (password) {
+            password.value = '';
+            password.type = 'password';
+        }
+        if (confirm) {
+            confirm.value = '';
+            confirm.type = 'password';
+        }
+        if (status) status.textContent = 'A senha atual não pode ser exibida.';
+        if (icon) icon.textContent = 'visibility';
+    }
+
+    function toggleMasterPasswordVisibility() {
+        const password = document.getElementById('master-new-password');
+        const confirm = document.getElementById('master-confirm-password');
+        const icon = document.getElementById('master-password-eye-icon');
+        if (!password || !confirm) return;
+
+        const show = password.type === 'password';
+        password.type = show ? 'text' : 'password';
+        confirm.type = show ? 'text' : 'password';
+        if (icon) icon.textContent = show ? 'visibility_off' : 'visibility';
+    }
+
+    function generateMasterPassword() {
+        const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const lower = 'abcdefghijkmnopqrstuvwxyz';
+        const digits = '23456789';
+        const symbols = '@#$%&*!?';
+        const all = upper + lower + digits + symbols;
+        const randomChar = chars => chars[Math.floor(Math.random() * chars.length)];
+
+        const chars = [
+            randomChar(upper),
+            randomChar(lower),
+            randomChar(digits),
+            randomChar(symbols)
+        ];
+
+        while (chars.length < 12) chars.push(randomChar(all));
+        for (let i = chars.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+
+        const generated = chars.join('');
+        document.getElementById('master-new-password').value = generated;
+        document.getElementById('master-confirm-password').value = generated;
+        document.getElementById('master-password-status').textContent = 'Senha gerada. Confira antes de aplicar.';
+    }
+
+    async function copyTextSafely(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand('copy');
+        textarea.remove();
+        if (!copied) throw new Error('Não foi possível copiar automaticamente.');
+    }
+
+    async function copyMasterCredentials() {
+        const username = document.getElementById('master-edit-username')?.value.trim();
+        const password = document.getElementById('master-new-password')?.value || '';
+        const status = document.getElementById('master-password-status');
+
+        if (!username) {
+            status.textContent = 'Selecione um usuário primeiro.';
+            return;
+        }
+        if (!password) {
+            status.textContent = 'Digite ou gere uma nova senha antes de copiar.';
+            return;
+        }
+
+        const text = `GetChat\n\nUsuário: ${username}\nSenha: ${password}`;
+        try {
+            await copyTextSafely(text);
+            status.textContent = '✓ Credenciais copiadas.';
+        } catch (error) {
+            console.error('[Painel Master] Falha ao copiar credenciais:', error);
+            status.textContent = 'Não foi possível copiar as credenciais.';
+        }
+    }
+
+    async function changeMasterUserPassword() {
+        const userId = masterSelectedUserId;
+        const password = document.getElementById('master-new-password')?.value || '';
+        const confirmation = document.getElementById('master-confirm-password')?.value || '';
+        const status = document.getElementById('master-password-status');
+        const button = document.getElementById('master-change-password-btn');
+        const label = button?.querySelector('span');
+
+        if (!userId || masterEditorMode === 'create') {
+            status.textContent = 'Selecione um usuário já cadastrado.';
+            return;
+        }
+        if (password.length < 8) {
+            status.textContent = 'A nova senha precisa ter pelo menos 8 caracteres.';
+            return;
+        }
+        if (password.length > 72) {
+            status.textContent = 'A nova senha não pode ultrapassar 72 caracteres.';
+            return;
+        }
+        if (password !== confirmation) {
+            status.textContent = 'As senhas informadas não coincidem.';
+            return;
+        }
+
+        button.disabled = true;
+        button.classList.add('opacity-60', 'cursor-wait');
+        label.textContent = 'Alterando...';
+        status.textContent = 'Atualizando a senha...';
+
+        try {
+            const { data, error } = await _supabase.functions.invoke('update-user-password', {
+                body: {
+                    user_id: userId,
+                    new_password: password
+                }
+            });
+
+            if (error) {
+                let message = error.message;
+                try {
+                    const body = await error.context?.json();
+                    if (body?.error) message = body.error;
+                } catch (_) {}
+                throw new Error(message);
+            }
+            if (data?.error) throw new Error(data.error);
+
+            label.textContent = '✓ Senha alterada';
+            status.textContent = '✓ Senha alterada com sucesso. Você já pode copiar as credenciais.';
+            document.getElementById('master-confirm-password').value = password;
+
+            setTimeout(() => {
+                if (label) label.textContent = 'Alterar senha';
+                button.disabled = false;
+                button.classList.remove('opacity-60', 'cursor-wait');
+            }, 1800);
+        } catch (error) {
+            console.error('[Painel Master] Falha ao alterar senha:', error);
+            status.textContent = 'Falha ao alterar a senha: ' + (error?.message || error);
+            if (label) label.textContent = 'Alterar senha';
+            button.disabled = false;
+            button.classList.remove('opacity-60', 'cursor-wait');
+        }
+    }
 
     // =======================================================
     // 6. REALTIME ENGINE & PRESENÇA
