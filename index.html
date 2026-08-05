@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat</title>
+    <title>GetChat — Project Aurora</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -223,6 +223,288 @@
         .chat-bg-dots { background-image: url('https://www.transparenttextures.com/patterns/subtle-dots.png'); }
         .chat-bg-grid { background-image: url('https://www.transparenttextures.com/patterns/grid.png'); }
         .chat-bg-none { background-image: none; }
+
+
+        /* =======================================================
+           PROJECT AURORA — ALPHA 0.4 / ENTREGA 1
+           Layout adaptativo Desktop, Tablet e Mobile
+           ======================================================= */
+        :root {
+            --aurora-app-max-width: 1680px;
+            --aurora-desktop-margin: 12px;
+            --aurora-sidebar-width: 300px;
+        }
+
+        #app-window {
+            width: min(calc(100vw - (var(--aurora-desktop-margin) * 2)), var(--aurora-app-max-width));
+            max-width: none !important;
+            height: calc(100dvh - (var(--aurora-desktop-margin) * 2));
+            max-height: none !important;
+            transition: width .25s ease, height .25s ease, border-radius .25s ease;
+        }
+
+        #chat-shell {
+            min-height: 0;
+        }
+
+        #chat-sidebar {
+            width: var(--aurora-sidebar-width);
+            flex: 0 0 var(--aurora-sidebar-width);
+            min-width: 0;
+        }
+
+        #chat-main {
+            min-width: 0;
+            min-height: 0;
+        }
+
+        #mobile-back-chat {
+            display: none;
+        }
+
+        .aurora-mobile-only {
+            display: none;
+        }
+
+        /* Tablet */
+        @media (min-width: 768px) and (max-width: 1100px) {
+            :root {
+                --aurora-desktop-margin: 8px;
+                --aurora-sidebar-width: 252px;
+            }
+
+            #app-window {
+                border-radius: 18px;
+            }
+
+            #app-window > header {
+                padding-left: 14px;
+                padding-right: 14px;
+            }
+
+            #header-user-name,
+            #header-user-badge,
+            #master-panel-btn span:last-child,
+            #app-window > header button[title="Sair da Conta"] span:last-child {
+                display: none;
+            }
+
+            #chat-sidebar > div:first-child {
+                padding: 12px;
+            }
+        }
+
+        /* Mobile: lista e conversa tornam-se telas independentes */
+        @media (max-width: 767px) {
+            body {
+                padding: 0 !important;
+                align-items: stretch !important;
+                justify-content: stretch !important;
+                min-height: 100dvh;
+                overflow: hidden;
+            }
+
+            #app-window {
+                width: 100vw !important;
+                height: 100dvh !important;
+                border-radius: 0 !important;
+                border: 0 !important;
+                box-shadow: none !important;
+            }
+
+            #app-window > header {
+                min-height: 58px;
+                padding: 8px 10px;
+                gap: 8px;
+            }
+
+            #app-window > header > div:first-child {
+                gap: 8px;
+                min-width: 0;
+                flex: 1;
+            }
+
+            #app-window > header > div:first-child > .material-symbols-outlined:not(#mobile-back-chat *) {
+                display: none;
+            }
+
+            #header-chat-title {
+                display: block;
+                max-width: 48vw;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            #header-sub-info {
+                max-width: 48vw;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            #private-badge,
+            #master-panel-btn,
+            #header-user-badge,
+            #header-user-name,
+            #app-window > header > div:last-child > div,
+            #app-window > header button[title="Sair da Conta"] span:last-child {
+                display: none !important;
+            }
+
+            #app-window > header > div:last-child {
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            #app-window > header button[title="Configurações"],
+            #app-window > header button[title="Sair da Conta"] {
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                justify-content: center;
+                border-radius: 12px;
+            }
+
+            #chat-shell {
+                position: relative;
+                display: block !important;
+                overflow: hidden;
+            }
+
+            #chat-sidebar,
+            #chat-main {
+                position: absolute;
+                inset: 0;
+                width: 100% !important;
+                height: 100%;
+                border: 0;
+                transition: transform .24s cubic-bezier(.4,0,.2,1), opacity .18s ease;
+                will-change: transform;
+            }
+
+            #chat-sidebar {
+                display: flex;
+                transform: translateX(0);
+                opacity: 1;
+                z-index: 2;
+                background: rgba(240, 244, 250, .82);
+            }
+
+            body.dark #chat-sidebar {
+                background: rgba(15, 23, 42, .94);
+            }
+
+            #chat-main {
+                display: flex;
+                transform: translateX(100%);
+                opacity: 0;
+                pointer-events: none;
+                z-index: 3;
+            }
+
+            #app-window.mobile-conversation-open #chat-sidebar {
+                transform: translateX(-18%);
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            #app-window.mobile-conversation-open #chat-main {
+                transform: translateX(0);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            #app-window.mobile-conversation-open #mobile-back-chat {
+                display: inline-flex;
+            }
+
+            #mobile-back-chat {
+                width: 36px;
+                height: 36px;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 36px;
+                border-radius: 12px;
+                background: rgba(255,255,255,.18);
+                border: 1px solid rgba(255,255,255,.25);
+            }
+
+            #chat-sidebar > div:first-child {
+                padding: 14px 16px;
+            }
+
+            #chat-sidebar .custom-scrollbar {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+
+            #chat-main > div:first-child {
+                min-height: 42px;
+                padding: 7px 12px;
+            }
+
+            #typing-indicator {
+                max-width: 48vw;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                font-size: 10px;
+            }
+
+            #chat-messages {
+                padding: 12px !important;
+                scroll-padding-bottom: 10px;
+            }
+
+            #chat-main > div:last-child {
+                padding: 9px 10px calc(9px + env(safe-area-inset-bottom));
+            }
+
+            #chat-main > div:last-child > div:first-child {
+                margin-bottom: 7px;
+            }
+
+            #message-input {
+                font-size: 16px !important; /* evita zoom automático no iOS */
+                padding-left: 12px !important;
+            }
+
+            #chat-main button[onclick="sendMessage()"] {
+                width: 42px;
+                height: 42px;
+                padding: 0;
+                justify-content: center;
+                border-radius: 14px;
+            }
+
+            #chat-main button[onclick="sendMessage()"] span:first-child {
+                display: none;
+            }
+
+            #emoji-popover {
+                left: 10px !important;
+                right: 10px !important;
+                bottom: 70px !important;
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+
+            #settings-modal,
+            #image-modal {
+                padding: 8px;
+            }
+
+            #settings-modal > div {
+                width: 100%;
+                max-height: calc(100dvh - 16px);
+                border-radius: 20px;
+            }
+
+            .aurora-mobile-only {
+                display: flex;
+            }
+        }
+
     </style>
 </head>
 <body class="p-4" id="app-body">
@@ -408,8 +690,8 @@
 
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
-                    <div class="text-[10px] text-outline mt-1">Alpha 0.3</div>
-                    <div class="text-[10px] text-outline">Build 00020</div>
+                    <div class="text-[10px] text-outline mt-1">Alpha 0.4</div>
+                    <div class="text-[10px] text-outline">Build 00021</div>
                 </div>
             </aside>
 
@@ -625,6 +907,9 @@
     <!-- Header Superior -->
     <header class="glossy-header flex justify-between items-center w-full px-6 py-2 shadow-sm text-white z-10">
         <div class="flex items-center gap-3 relative z-20">
+            <button id="mobile-back-chat" type="button" onclick="mobileReturnToConversationList()" title="Voltar para contatos" aria-label="Voltar para contatos">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
             <span class="material-symbols-outlined drop-shadow-md text-2xl">forum</span>
             <div>
                 <div class="flex items-center gap-2">
@@ -672,9 +957,9 @@
         </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
+    <div id="chat-shell" class="flex flex-1 overflow-hidden">
         <!-- Sidebar Esquerda -->
-        <aside class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
+        <aside id="chat-sidebar" class="w-[280px] frosted-sidebar border-r border-white/40 flex flex-col">
             <div class="p-4 flex items-center gap-3 border-b border-white/30 bg-white/20">
                 <div class="relative">
                     <div class="w-10 h-10 rounded-xl overflow-hidden border border-white/70 shadow-sm bg-primary/20 flex items-center justify-center text-primary">
@@ -731,7 +1016,7 @@
         </aside>
 
         <!-- Área Central de Mensagens -->
-        <main class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
+        <main id="chat-main" class="flex-1 flex flex-col bg-white/40 backdrop-blur-md relative">
             <div class="bg-white/60 px-4 py-2 flex items-center justify-between border-b border-white/40 shadow-sm">
                 <div class="flex items-center gap-2">
                     <span id="chat-type-icon" class="material-symbols-outlined text-primary text-base">forum</span>
@@ -958,12 +1243,16 @@
 
     function showLoginScreen() {
         document.getElementById('login-modal').classList.remove('hidden');
-        document.getElementById('app-window').classList.add('hidden');
+        const appWindow = document.getElementById('app-window');
+        appWindow.classList.add('hidden');
+        appWindow.classList.remove('mobile-conversation-open');
     }
 
     function hideLoginScreen() {
         document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('app-window').classList.remove('hidden');
+        const appWindow = document.getElementById('app-window');
+        appWindow.classList.remove('hidden');
+        if (isAuroraMobileLayout()) appWindow.classList.remove('mobile-conversation-open');
     }
 
     function setLoginLoading(isLoading) {
@@ -2381,6 +2670,43 @@
     // =======================================================
     // 7. CHAT E RENDERIZAÇÃO
     // =======================================================
+    function isAuroraMobileLayout() {
+        return window.matchMedia('(max-width: 767px)').matches;
+    }
+
+    function mobileOpenConversation() {
+        if (!isAuroraMobileLayout()) return;
+        const appWindow = document.getElementById('app-window');
+        appWindow?.classList.add('mobile-conversation-open');
+        requestAnimationFrame(() => {
+            document.getElementById('message-input')?.focus({ preventScroll: true });
+        });
+    }
+
+    function mobileReturnToConversationList() {
+        const appWindow = document.getElementById('app-window');
+        appWindow?.classList.remove('mobile-conversation-open');
+        document.getElementById('search-users-input')?.focus({ preventScroll: true });
+    }
+
+    function syncAuroraResponsiveState() {
+        const appWindow = document.getElementById('app-window');
+        if (!appWindow) return;
+
+        if (!isAuroraMobileLayout()) {
+            appWindow.classList.remove('mobile-conversation-open');
+            return;
+        }
+
+        /* No celular, após login ou redimensionamento, a lista é a tela inicial.
+           Uma conversa só é aberta explicitamente pelo usuário. */
+        if (!activeDMTargetUser && !currentUserCanAccessGeneral) {
+            appWindow.classList.remove('mobile-conversation-open');
+        }
+    }
+
+    window.addEventListener('resize', syncAuroraResponsiveState);
+
     function getDMRoomName(userAId, userBId) {
         return `dm_${[userAId, userBId].sort().join('_')}`;
     }
@@ -2396,6 +2722,7 @@
         setComposerEnabled(true);
         fetchMessages();
         renderOnlineUsersList();
+        mobileOpenConversation();
     }
 
     function switchToMainGroup() {
@@ -2407,6 +2734,7 @@
         setComposerEnabled(true);
         fetchMessages();
         renderOnlineUsersList();
+        mobileOpenConversation();
     }
 
     function updateChatHeaderUI() {
