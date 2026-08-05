@@ -365,7 +365,7 @@
 </div>
 
 
-<!-- 3. PAINEL MASTER — ALPHA 0.3 PREVIEW -->
+<!-- 3. PAINEL MASTER — ALPHA 0.3 -->
 <div id="master-modal" class="fixed inset-0 z-50 bg-slate-950/65 backdrop-blur-md hidden p-3 md:p-5">
     <div class="glass-window w-full h-full max-w-[1600px] mx-auto rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-white/60">
         <header class="glossy-header px-5 md:px-7 py-4 flex items-center justify-between text-white">
@@ -409,7 +409,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.3</div>
-                    <div class="text-[10px] text-outline">Build 00019</div>
+                    <div class="text-[10px] text-outline">Build 00020</div>
                 </div>
             </aside>
 
@@ -620,7 +620,7 @@
 </div>
 
 <!-- 4. JANELA PRINCIPAL DO CHAT -->
-<div id="app-window" class="glass-window w-full max-w-[1024px] h-[720px] rounded-xl flex flex-col overflow-hidden hidden">
+<div id="app-window" class="glass-window w-full max-w-[1440px] h-[calc(100vh-2rem)] max-h-[900px] rounded-2xl flex flex-col overflow-hidden hidden">
     
     <!-- Header Superior -->
     <header class="glossy-header flex justify-between items-center w-full px-6 py-2 shadow-sm text-white z-10">
@@ -762,14 +762,12 @@
 
             <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="sendNudge()" class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm">
-                        <span class="material-symbols-outlined text-sm text-amber-600">notifications</span>
-                        <span>Chamar Atenção</span>
+                    <button onclick="sendNudge()" title="Chamar atenção" aria-label="Chamar atenção" class="glossy-pill w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white transition-all text-on-surface-variant shadow-sm">
+                        <span class="material-symbols-outlined text-lg text-amber-600">notifications</span>
                     </button>
                     
-                    <label class="glossy-pill flex items-center gap-1 px-3 py-1 rounded-lg hover:bg-white transition-all text-xs font-bold text-on-surface-variant shadow-sm cursor-pointer">
-                        <span class="material-symbols-outlined text-sm">attach_file</span>
-                        <span>Anexar Arquivo</span>
+                    <label title="Anexar arquivo" aria-label="Anexar arquivo" class="glossy-pill w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white transition-all text-on-surface-variant shadow-sm cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">attach_file</span>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)"/>
                     </label>
                 </div>
@@ -2721,6 +2719,12 @@
 
     _supabase.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') showLoginScreen();
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (!masterDirty) return;
+        event.preventDefault();
+        event.returnValue = '';
     });
 
     window.addEventListener('DOMContentLoaded', checkSession);
