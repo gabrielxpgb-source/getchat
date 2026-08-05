@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat — Project Aurora</title>
+    <title>GetChat — Project Aurora Build 00022</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -505,6 +505,61 @@
             }
         }
 
+
+
+        /* =======================================================
+           PROJECT AURORA — ALPHA 0.4 / ENTREGA 2
+           Personalização, acessibilidade e preferências
+           ======================================================= */
+        :root {
+            --gc-primary: #1976d2;
+            --gc-primary-dark: #0d47a1;
+            --gc-primary-soft: rgba(25,118,210,.14);
+            --gc-ui-scale: 1;
+        }
+
+        body { font-size: calc(1rem * var(--gc-ui-scale)); }
+        .glossy-header { background: linear-gradient(180deg, var(--gc-primary) 0%, var(--gc-primary-dark) 100%) !important; }
+        .gel-button { background: linear-gradient(to bottom, color-mix(in srgb, var(--gc-primary) 78%, white), var(--gc-primary)) !important; }
+        .text-primary { color: var(--gc-primary) !important; }
+        .bg-primary { background-color: var(--gc-primary) !important; }
+        .bg-primary\/10 { background-color: var(--gc-primary-soft) !important; }
+        .bg-primary\/20 { background-color: color-mix(in srgb, var(--gc-primary) 20%, transparent) !important; }
+        .border-primary\/10 { border-color: color-mix(in srgb, var(--gc-primary) 10%, transparent) !important; }
+        .border-primary\/20 { border-color: color-mix(in srgb, var(--gc-primary) 20%, transparent) !important; }
+        .focus\:ring-primary:focus, .focus\:ring-primary\/20:focus, .focus\:ring-primary\/40:focus { --tw-ring-color: color-mix(in srgb, var(--gc-primary) 40%, transparent) !important; }
+
+        .chat-bg-aurora {
+            background-color: #eef5ff;
+            background-image:
+                radial-gradient(circle at 18% 20%, rgba(125,211,252,.34), transparent 34%),
+                radial-gradient(circle at 80% 18%, rgba(196,181,253,.30), transparent 32%),
+                radial-gradient(circle at 50% 82%, rgba(110,231,183,.22), transparent 38%);
+        }
+        .chat-bg-lines {
+            background-color: #f8fbff;
+            background-image: repeating-linear-gradient(135deg, rgba(25,118,210,.07) 0 1px, transparent 1px 14px);
+        }
+        .chat-bg-paper {
+            background-color: #faf7ef;
+            background-image: linear-gradient(rgba(70,70,70,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(70,70,70,.035) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .chat-bg-solid-blue { background: #eaf3ff !important; }
+        .chat-bg-solid-gray { background: #eef1f5 !important; }
+        .chat-bg-solid-green { background: #edf8f0 !important; }
+        .chat-bg-solid-lilac { background: #f3efff !important; }
+        body.dark .chat-bg-aurora { background-color:#0f172a; background-image:radial-gradient(circle at 18% 20%,rgba(14,165,233,.16),transparent 34%),radial-gradient(circle at 80% 18%,rgba(139,92,246,.16),transparent 32%),radial-gradient(circle at 50% 82%,rgba(16,185,129,.10),transparent 38%); }
+        body.dark .chat-bg-lines, body.dark .chat-bg-paper, body.dark .chat-bg-solid-blue, body.dark .chat-bg-solid-gray, body.dark .chat-bg-solid-green, body.dark .chat-bg-solid-lilac { background-color:#111827 !important; }
+
+        .theme-choice, .accent-choice, .font-choice { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+        .theme-choice.active, .accent-choice.active, .font-choice.active { border-color: var(--gc-primary) !important; box-shadow: 0 0 0 3px var(--gc-primary-soft); transform: translateY(-1px); }
+        .accent-choice { width: 30px; height: 30px; border-radius: 999px; border: 3px solid rgba(255,255,255,.9); box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+        .avatar-initials { font-weight: 800; letter-spacing: -.03em; }
+        html.gc-scale-small { --gc-ui-scale: .92; }
+        html.gc-scale-normal { --gc-ui-scale: 1; }
+        html.gc-scale-large { --gc-ui-scale: 1.10; }
+
     </style>
 </head>
 <body class="p-4" id="app-body">
@@ -563,79 +618,98 @@
             </button>
         </div>
 
-        <!-- Seção 1: Foto de Perfil Local -->
+        <!-- Perfil -->
         <div class="flex items-center gap-4 bg-white/40 p-4 rounded-xl border border-white/60">
             <div class="relative group">
                 <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/40 shadow-sm bg-primary/10 flex items-center justify-center text-primary">
                     <img id="settings-avatar-preview" src="" class="w-full h-full object-cover hidden"/>
-                    <span id="settings-avatar-placeholder" class="material-symbols-outlined text-3xl">person</span>
+                    <span id="settings-avatar-placeholder" class="avatar-initials text-xl">US</span>
                 </div>
             </div>
-            <div class="flex flex-col gap-1.5 flex-1">
-                <span class="text-xs font-bold text-on-surface">Foto de Perfil</span>
-                <p class="text-[11px] text-outline">Selecione um arquivo de imagem do seu computador ou celular.</p>
-                <label class="gel-button text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 w-fit cursor-pointer shadow-sm">
-                    <span class="material-symbols-outlined text-sm">upload</span>
-                    <span>Alterar Foto</span>
-                    <input type="file" id="avatar-file-input" accept="image/*" class="hidden" onchange="uploadAvatarFile(event)"/>
-                </label>
+            <div class="flex flex-col gap-2 flex-1 min-w-0">
+                <div>
+                    <span class="text-xs font-bold text-on-surface">Foto de perfil</span>
+                    <p class="text-[11px] text-outline">Use uma imagem ou deixe suas iniciais como avatar.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <label class="gel-button text-white text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1 w-fit cursor-pointer shadow-sm">
+                        <span class="material-symbols-outlined text-sm relative z-10">upload</span>
+                        <span class="relative z-10">Alterar foto</span>
+                        <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="uploadAvatarFile(event)"/>
+                    </label>
+                    <button id="remove-avatar-btn" type="button" onclick="removeAvatar()" class="px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-700 text-xs font-bold border border-red-200 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">delete</span> Remover foto
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Seção 2: Aparência e Tema -->
-        <div class="space-y-3">
+        <!-- Aparência -->
+        <div class="space-y-4">
             <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Aparência & Interface</h3>
-            
-            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">dark_mode</span>
-                    <span class="text-xs font-bold text-on-surface">Modo Noturno</span>
+
+            <div class="bg-white/40 p-3 rounded-xl border border-white/60 space-y-2">
+                <div class="text-xs font-bold text-on-surface">Tema</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-theme="light" onclick="setThemeMode('light')" class="theme-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-xs font-bold">Claro</button>
+                    <button type="button" data-theme="dark" onclick="setThemeMode('dark')" class="theme-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-xs font-bold">Escuro</button>
+                    <button type="button" data-theme="system" onclick="setThemeMode('system')" class="theme-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-xs font-bold">Sistema</button>
                 </div>
-                <input type="checkbox" id="toggle-darkmode" onchange="toggleDarkMode(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
             </div>
 
-            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">wallpaper</span>
-                    <span class="text-xs font-bold text-on-surface">Fundo do Chat</span>
+            <div class="bg-white/40 p-3 rounded-xl border border-white/60 space-y-2">
+                <div class="text-xs font-bold text-on-surface">Cor principal</div>
+                <div class="flex flex-wrap gap-3" id="accent-color-options">
+                    <button type="button" class="accent-choice" data-accent="blue" onclick="setAccentColor('blue')" style="background:#1976d2" title="Azul"></button>
+                    <button type="button" class="accent-choice" data-accent="green" onclick="setAccentColor('green')" style="background:#15803d" title="Verde"></button>
+                    <button type="button" class="accent-choice" data-accent="purple" onclick="setAccentColor('purple')" style="background:#7c3aed" title="Roxo"></button>
+                    <button type="button" class="accent-choice" data-accent="orange" onclick="setAccentColor('orange')" style="background:#ea580c" title="Laranja"></button>
+                    <button type="button" class="accent-choice" data-accent="red" onclick="setAccentColor('red')" style="background:#dc2626" title="Vermelho"></button>
+                    <button type="button" class="accent-choice" data-accent="graphite" onclick="setAccentColor('graphite')" style="background:#475569" title="Grafite"></button>
                 </div>
-                <select id="chat-bg-select" onchange="changeChatBackground(this.value)" class="text-xs rounded-lg border-white/80 bg-white/80 font-semibold focus:ring-primary">
+            </div>
+
+            <div class="flex items-center justify-between gap-3 bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="material-symbols-outlined text-primary">wallpaper</span>
+                    <span class="text-xs font-bold text-on-surface">Fundo do chat</span>
+                </div>
+                <select id="chat-bg-select" onchange="changeChatBackground(this.value)" class="text-xs rounded-lg border-white/80 bg-white/80 font-semibold focus:ring-primary max-w-[58%]">
                     <option value="chat-bg-cubes">Cubos 3D</option>
                     <option value="chat-bg-dots">Pontilhado</option>
                     <option value="chat-bg-grid">Grade</option>
-                    <option value="chat-bg-none">Limpo (Sem Fundo)</option>
+                    <option value="chat-bg-none">Limpo</option>
+                    <option value="chat-bg-aurora">Aurora</option>
+                    <option value="chat-bg-lines">Linhas</option>
+                    <option value="chat-bg-paper">Papel</option>
+                    <option value="chat-bg-solid-blue">Azul sólido</option>
+                    <option value="chat-bg-solid-gray">Cinza sólido</option>
+                    <option value="chat-bg-solid-green">Verde sólido</option>
+                    <option value="chat-bg-solid-lilac">Lilás sólido</option>
                 </select>
             </div>
 
-            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">format_size</span>
-                    <span class="text-xs font-bold text-on-surface">Tamanho da Interface</span>
+            <div class="bg-white/40 p-3 rounded-xl border border-white/60 space-y-2">
+                <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">format_size</span><span class="text-xs font-bold text-on-surface">Tamanho da interface</span></div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-scale="small" onclick="changeUIScale('small')" class="font-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-xs font-black">A−</button>
+                    <button type="button" data-scale="normal" onclick="changeUIScale('normal')" class="font-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-xs font-black">A</button>
+                    <button type="button" data-scale="large" onclick="changeUIScale('large')" class="font-choice px-3 py-2 rounded-xl bg-white/70 border border-white/80 text-sm font-black">A+</button>
                 </div>
-                <select id="ui-scale-select" onchange="changeUIScale(this.value)" class="text-xs rounded-lg border-white/80 bg-white/80 font-semibold focus:ring-primary">
-                    <option value="normal">Padrão</option>
-                    <option value="large">Ampliada (+10%)</option>
-                </select>
             </div>
         </div>
 
-        <!-- Seção 3: Sons e Notificações -->
+        <!-- Sons -->
         <div class="space-y-3">
             <h3 class="text-xs font-bold uppercase tracking-wider text-outline">Sons e Áudios</h3>
-
-            <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">volume_up</span>
-                    <span class="text-xs font-bold text-on-surface">Sons de Mensagens e Nudges</span>
+            <div class="bg-white/40 p-3 rounded-xl border border-white/60">
+                <div class="flex items-start gap-2">
+                    <span class="material-symbols-outlined text-primary">notifications_active</span>
+                    <div><div class="text-xs font-bold text-on-surface">Mensagens e Chamar atenção</div><p class="text-[11px] text-outline mt-0.5">Esses sons são obrigatórios para garantir que os avisos sejam recebidos.</p></div>
                 </div>
-                <input type="checkbox" id="toggle-sounds" checked onchange="toggleSoundMute(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
             </div>
-
             <div class="flex items-center justify-between bg-white/40 p-3 rounded-xl border border-white/60">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">person_add</span>
-                    <span class="text-xs font-bold text-on-surface">Aviso Sonoro quando Usuário Entra Online</span>
-                </div>
+                <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">person_add</span><span class="text-xs font-bold text-on-surface">Aviso quando usuário entra online</span></div>
                 <input type="checkbox" id="toggle-online-sound" checked onchange="toggleOnlineSound(this.checked)" class="rounded text-primary focus:ring-primary w-5 h-5 cursor-pointer"/>
             </div>
         </div>
@@ -691,7 +765,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.4</div>
-                    <div class="text-[10px] text-outline">Build 00021</div>
+                    <div class="text-[10px] text-outline">Build 00022</div>
                 </div>
             </aside>
 
@@ -1169,24 +1243,19 @@
     })();
 
     let userSettings = {
-        soundsEnabled: true,
+        soundsEnabled: true, // mensagens e Nudge são sempre obrigatórios
         onlineSoundEnabled: true,
-        darkMode: false,
+        themeMode: 'light',
+        accentColor: 'blue',
         bgStyle: 'chat-bg-cubes',
         uiScale: 'normal'
     };
 
     function playSound(type) {
-        if (!userSettings.soundsEnabled && type !== 'online') {
-            console.debug(`[Áudio] ${type} ignorado: sons desativados.`);
-            return;
-        }
-
-        if (type === 'online' && (!userSettings.soundsEnabled || !userSettings.onlineSoundEnabled)) {
+        if (type === 'online' && !userSettings.onlineSoundEnabled) {
             console.debug('[Áudio] online ignorado: aviso de entrada desativado.');
             return;
         }
-
         AudioManager.play(type);
     }
 
@@ -1477,6 +1546,7 @@
 
         updateUserRoleBadge();
         updateUserAvatarUI(currentUserProfile.avatar_url);
+        loadUserSettings();
         updateChatHeaderUI();
         if (currentUserCanAccessGeneral) {
             fetchMessages();
@@ -1634,27 +1704,154 @@
         }
     }
 
-    function updateUserAvatarUI(url) {
-        const headerImg = document.getElementById("header-avatar-img");
-        const headerPlaceholder = document.getElementById("header-avatar-placeholder");
-        const sidebarImg = document.getElementById("sidebar-avatar-img");
-        const sidebarPlaceholder = document.getElementById("sidebar-avatar-placeholder");
-        const settingsImg = document.getElementById("settings-avatar-preview");
-        const settingsPlaceholder = document.getElementById("settings-avatar-placeholder");
+    function getUserInitials(profile = currentUserProfile) {
+        const raw = (profile?.nome_exibicao || profile?.nome_completo || profile?.username || 'US').trim();
+        const parts = raw.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        return raw.slice(0, 2).toUpperCase();
+    }
 
-        if (url) {
-            headerImg.src = url; headerImg.classList.remove("hidden"); headerPlaceholder.classList.add("hidden");
-            sidebarImg.src = url; sidebarImg.classList.remove("hidden"); sidebarPlaceholder.classList.add("hidden");
-            settingsImg.src = url; settingsImg.classList.remove("hidden"); settingsPlaceholder.classList.add("hidden");
+    function updateUserAvatarUI(url) {
+        const pairs = [
+            ['header-avatar-img','header-avatar-placeholder'],
+            ['sidebar-avatar-img','sidebar-avatar-placeholder'],
+            ['settings-avatar-preview','settings-avatar-placeholder']
+        ];
+        const initials = getUserInitials();
+        pairs.forEach(([imgId, placeholderId]) => {
+            const img = document.getElementById(imgId);
+            const placeholder = document.getElementById(placeholderId);
+            if (!img || !placeholder) return;
+            if (url) {
+                img.src = url;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+                placeholder.textContent = initials;
+                placeholder.classList.remove('material-symbols-outlined');
+                placeholder.classList.add('avatar-initials');
+                placeholder.classList.remove('hidden');
+            }
+        });
+        const removeBtn = document.getElementById('remove-avatar-btn');
+        if (removeBtn) {
+            removeBtn.disabled = !url;
+            removeBtn.classList.toggle('opacity-40', !url);
+            removeBtn.classList.toggle('cursor-not-allowed', !url);
         }
     }
 
+    async function removeAvatar() {
+        if (!currentUserProfile?.avatar_url) return;
+        if (!confirm('Remover sua foto de perfil e voltar para as iniciais?')) return;
+        const oldUrl = currentUserProfile.avatar_url;
+        try {
+            const { error } = await _supabase.rpc('update_my_profile', {
+                p_nome_exibicao: currentUserProfile.nome_exibicao,
+                p_data_nascimento: currentUserProfile.data_nascimento,
+                p_avatar_url: null
+            });
+            if (error) throw error;
+            currentUserProfile.avatar_url = null;
+            updateUserAvatarUI(null);
+            try {
+                const marker = '/storage/v1/object/public/avatars/';
+                if (oldUrl.includes(marker)) {
+                    const objectPath = decodeURIComponent(oldUrl.split(marker)[1].split('?')[0]);
+                    await _supabase.storage.from('avatars').remove([objectPath]);
+                }
+            } catch (cleanupError) {
+                console.warn('[Avatar] Foto removida do perfil, mas o arquivo antigo não pôde ser excluído.', cleanupError);
+            }
+        } catch (err) {
+            console.error('[Avatar] Falha ao remover:', err);
+            alert('Erro ao remover foto: ' + (err?.message || 'erro desconhecido'));
+        }
+    }
+
+    const SETTINGS_STORAGE_PREFIX = 'getchat_preferences_';
+    const ACCENT_COLORS = {
+        blue: ['#1976d2','#0d47a1'], green: ['#15803d','#14532d'], purple: ['#7c3aed','#4c1d95'],
+        orange: ['#ea580c','#9a3412'], red: ['#dc2626','#991b1b'], graphite: ['#475569','#1e293b']
+    };
+    const CHAT_BG_CLASSES = ['chat-bg-cubes','chat-bg-dots','chat-bg-grid','chat-bg-none','chat-bg-aurora','chat-bg-lines','chat-bg-paper','chat-bg-solid-blue','chat-bg-solid-gray','chat-bg-solid-green','chat-bg-solid-lilac'];
+
+    function settingsStorageKey() { return SETTINGS_STORAGE_PREFIX + (currentUserProfile?.id || 'guest'); }
+    function saveUserSettings() { try { localStorage.setItem(settingsStorageKey(), JSON.stringify(userSettings)); } catch (_) {} }
+    function loadUserSettings() {
+        try {
+            const raw = localStorage.getItem(settingsStorageKey());
+            if (raw) userSettings = { ...userSettings, ...JSON.parse(raw), soundsEnabled: true };
+        } catch (_) {}
+        applyAllUserSettings();
+    }
+    function applyAllUserSettings() {
+        setThemeMode(userSettings.themeMode || 'light', false);
+        setAccentColor(userSettings.accentColor || 'blue', false);
+        changeChatBackground(userSettings.bgStyle || 'chat-bg-cubes', false);
+        changeUIScale(userSettings.uiScale || 'normal', false);
+        const onlineToggle = document.getElementById('toggle-online-sound');
+        if (onlineToggle) onlineToggle.checked = userSettings.onlineSoundEnabled !== false;
+        syncSettingsControls();
+    }
+    function syncSettingsControls() {
+        document.querySelectorAll('[data-theme]').forEach(el => el.classList.toggle('active', el.dataset.theme === userSettings.themeMode));
+        document.querySelectorAll('[data-accent]').forEach(el => el.classList.toggle('active', el.dataset.accent === userSettings.accentColor));
+        document.querySelectorAll('[data-scale]').forEach(el => el.classList.toggle('active', el.dataset.scale === userSettings.uiScale));
+        const bg = document.getElementById('chat-bg-select'); if (bg) bg.value = userSettings.bgStyle;
+    }
+    function applyResolvedTheme() {
+        const dark = userSettings.themeMode === 'dark' || (userSettings.themeMode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+        document.body.classList.toggle('dark', dark);
+    }
+    function setThemeMode(mode, persist = true) {
+        if (!['light','dark','system'].includes(mode)) mode = 'light';
+        userSettings.themeMode = mode;
+        applyResolvedTheme();
+        if (persist) saveUserSettings();
+        syncSettingsControls();
+    }
+    function toggleDarkMode(checked) { setThemeMode(checked ? 'dark' : 'light'); }
+    function setAccentColor(name, persist = true) {
+        if (!ACCENT_COLORS[name]) name = 'blue';
+        userSettings.accentColor = name;
+        const [primary, dark] = ACCENT_COLORS[name];
+        document.documentElement.style.setProperty('--gc-primary', primary);
+        document.documentElement.style.setProperty('--gc-primary-dark', dark);
+        document.documentElement.style.setProperty('--gc-primary-soft', primary + '24');
+        if (persist) saveUserSettings();
+        syncSettingsControls();
+    }
+    function changeChatBackground(value, persist = true) {
+        if (!CHAT_BG_CLASSES.includes(value)) value = 'chat-bg-cubes';
+        userSettings.bgStyle = value;
+        const chat = document.getElementById('chat-messages');
+        if (chat) { chat.classList.remove(...CHAT_BG_CLASSES); chat.classList.add(value); }
+        if (persist) saveUserSettings();
+        syncSettingsControls();
+    }
+    function changeUIScale(value, persist = true) {
+        if (!['small','normal','large'].includes(value)) value = 'normal';
+        userSettings.uiScale = value;
+        document.documentElement.classList.remove('gc-scale-small','gc-scale-normal','gc-scale-large');
+        document.documentElement.classList.add('gc-scale-' + value);
+        if (persist) saveUserSettings();
+        syncSettingsControls();
+    }
+    function toggleOnlineSound(enabled) { userSettings.onlineSoundEnabled = !!enabled; saveUserSettings(); }
+    function toggleSoundMute() { userSettings.soundsEnabled = true; }
+
+    const systemThemeMedia = matchMedia('(prefers-color-scheme: dark)');
+    systemThemeMedia.addEventListener?.('change', () => { if (userSettings.themeMode === 'system') applyResolvedTheme(); });
 
     // =======================================================
     // 5. MODAIS & PAINEL MASTER — ALPHA 0.3
     // =======================================================
-    function openSettingsModal() { document.getElementById("settings-modal").classList.remove("hidden"); }
-    function closeSettingsModal() { document.getElementById("settings-modal").classList.add("hidden"); }
+    function openSettingsModal() { syncSettingsControls(); updateUserAvatarUI(currentUserProfile?.avatar_url); document.getElementById('settings-modal').classList.remove('hidden'); }
+    function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
 
     let masterSelectedUserId = null;
     let masterOriginalSnapshot = null;
