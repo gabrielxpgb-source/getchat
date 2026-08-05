@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat — Project Echo Build 00023</title>
+    <title>GetChat — Project Echo Build 00024</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -584,12 +584,57 @@
         body.dark .echo-reply-preview { background: rgba(15,23,42,.48); }
         .echo-message-actions {
             opacity: 0;
+            pointer-events: none;
             transform: translateY(2px);
             transition: opacity .15s ease, transform .15s ease;
         }
-        .group:hover > .echo-message-actions,
-        .echo-message-actions:focus-within { opacity: 1; transform: translateY(0); }
-        @media (hover:none) { .echo-message-actions { opacity: 1; transform:none; } }
+        .echo-message-actions.is-open,
+        .echo-message-actions:focus-within {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .echo-reply-action {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(3px);
+            transition: opacity .1s ease, transform .1s ease;
+        }
+        .echo-reaction-actions {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(2px);
+            transition: opacity .15s ease .3s, transform .15s ease .3s;
+        }
+        @media (hover:hover) and (pointer:fine) {
+            .echo-message-bubble:hover > .echo-message-actions {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(0);
+            }
+            .echo-message-bubble:hover .echo-reply-action {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateX(0);
+            }
+            .echo-message-bubble:hover .echo-reaction-actions {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(0);
+            }
+        }
+        @media (hover:none), (pointer:coarse) {
+            .echo-message-actions.is-open .echo-reply-action,
+            .echo-message-actions.is-open .echo-reaction-actions {
+                opacity: 1;
+                pointer-events: auto;
+                transform: none;
+                transition-delay: 0s;
+            }
+        }
+        .echo-sender-link { cursor:pointer; }
+        .echo-sender-link:hover { text-decoration: underline; }
+        .echo-swipe-active { transition:none !important; }
         .echo-reaction-pill {
             background: rgba(255,255,255,.72);
             border: 1px solid rgba(255,255,255,.82);
@@ -816,7 +861,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.5</div>
-                    <div class="text-[10px] text-outline">Build 00023</div>
+                    <div class="text-[10px] text-outline">Build 00024</div>
                 </div>
             </aside>
 
@@ -2947,6 +2992,10 @@
     }
 
     function updateUnreadBadgesUI() {
+        const totalUnread = Array.from(unreadCounts.values()).reduce((sum, value) => sum + Number(value || 0), 0);
+        document.title = totalUnread > 0
+            ? `(${totalUnread}) GetChat — Project Echo Build 00024`
+            : 'GetChat — Project Echo Build 00024';
         const badge = document.getElementById('unread-main-group');
         if (!currentUserCanAccessGeneral) {
             badge.classList.add('hidden');
@@ -3172,14 +3221,14 @@
         msgWrapper.innerHTML = `
             ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 overflow-hidden">${avatarMarkup}</div>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
-                <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(senderName)}</span>
-                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
+                <button type="button" ${(!isMe && !activeDMTargetUser) ? `onclick="startPrivateChat('${msg.remetente_id}')" title="Abrir conversa privada com ${escapeHtml(senderName)}"` : 'disabled'} class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1 ${(!isMe && !activeDMTargetUser) ? 'echo-sender-link' : 'cursor-default'}">${escapeHtml(senderName)}</button>
+                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} echo-message-bubble px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
                     <div id="echo-reply-preview-${msg.id}" class="hidden echo-reply-preview rounded-lg px-2.5 py-1.5 mb-2 text-[11px]"></div>
-                    <div class="pr-12 pb-1">${formatMessageContent(msg.texto || '')}</div>
+                    <div class="pr-12 pb-1 echo-message-content">${formatMessageContent(msg.texto || '')}</div>
                     <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
                     <div class="echo-message-actions absolute -top-3 ${isMe ? 'left-2' : 'right-2'} flex items-center gap-1 bg-white/90 dark:bg-slate-800/90 border border-white rounded-full px-1 py-0.5 shadow-md">
-                        <button type="button" onclick="startReply(${msg.id}, '${escapeHtml(senderName).replace(/'/g,"&#39;")}')" title="Responder" class="w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-sm">reply</span></button>
-                        ${ECHO_REACTIONS.map(emoji => `<button type="button" onclick="toggleReaction(${msg.id}, '${emoji}')" class="w-7 h-7 rounded-full hover:bg-black/5 text-sm">${emoji}</button>`).join('')}
+                        <button type="button" onclick="startReply(${msg.id}, '${escapeHtml(senderName).replace(/'/g,"&#39;")}')" title="Responder" class="echo-reply-action w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-sm">reply</span></button>
+                        <div class="echo-reaction-actions flex items-center gap-1">${ECHO_REACTIONS.map(emoji => `<button type="button" onclick="toggleReaction(${msg.id}, '${emoji}')" class="w-7 h-7 rounded-full hover:bg-black/5 text-sm">${emoji}</button>`).join('')}</div>
                     </div>
                 </div>
                 <div id="echo-reactions-${msg.id}" class="flex flex-wrap gap-1 mt-1"></div>
@@ -3188,6 +3237,7 @@
         `;
 
         chatContainer.appendChild(msgWrapper);
+        setupEchoMessageInteractions(msgWrapper, msg, senderName);
         if (msg.reply_to_id) loadReplyPreview(msg.reply_to_id, msg.id);
         loadMessageReactions(msg.id);
         scrollToBottom();
@@ -3253,6 +3303,97 @@
     }
 
 
+    function closeAllMessageActions(except = null) {
+        document.querySelectorAll('.echo-message-actions.is-open').forEach(el => {
+            if (el !== except) el.classList.remove('is-open');
+        });
+    }
+
+    function setupEchoMessageInteractions(wrapper, msg, senderName) {
+        const bubble = wrapper.querySelector('.echo-message-bubble');
+        const actions = wrapper.querySelector('.echo-message-actions');
+        if (!bubble || !actions || !window.matchMedia('(hover:none), (pointer:coarse)').matches) return;
+
+        let pressTimer = null;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let swiping = false;
+
+        const clearPress = () => {
+            if (pressTimer) clearTimeout(pressTimer);
+            pressTimer = null;
+        };
+
+        bubble.addEventListener('pointerdown', event => {
+            if (event.target.closest('button, a, video, audio')) return;
+            startX = currentX = event.clientX;
+            startY = event.clientY;
+            swiping = false;
+            clearPress();
+            pressTimer = setTimeout(() => {
+                closeAllMessageActions(actions);
+                actions.classList.add('is-open');
+                if (navigator.vibrate) navigator.vibrate(20);
+            }, 480);
+        });
+
+        bubble.addEventListener('pointermove', event => {
+            if (!startX) return;
+            currentX = event.clientX;
+            const dx = currentX - startX;
+            const dy = event.clientY - startY;
+            if (Math.abs(dx) > 8 || Math.abs(dy) > 8) clearPress();
+            if (dx < -10 && Math.abs(dx) > Math.abs(dy)) {
+                swiping = true;
+                bubble.classList.add('echo-swipe-active');
+                bubble.style.transform = `translateX(${Math.max(dx, -82)}px)`;
+            }
+        });
+
+        const finish = () => {
+            clearPress();
+            const dx = currentX - startX;
+            bubble.classList.remove('echo-swipe-active');
+            bubble.style.transform = '';
+            if (swiping && dx <= -58) startReply(msg.id, senderName);
+            startX = startY = currentX = 0;
+            swiping = false;
+        };
+        bubble.addEventListener('pointerup', finish);
+        bubble.addEventListener('pointercancel', finish);
+    }
+
+    document.addEventListener('pointerdown', event => {
+        if (!event.target.closest('.echo-message-bubble')) closeAllMessageActions();
+    });
+
+    async function handleComposerPaste(event) {
+        const items = Array.from(event.clipboardData?.items || []);
+        const files = items.filter(item => item.kind === 'file').map(item => item.getAsFile()).filter(Boolean);
+        if (!files.length) return; // textos continuam com o comportamento normal do navegador
+        event.preventDefault();
+        for (const file of files) await sendClipboardFile(file);
+    }
+
+    function sendClipboardFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async event => {
+                try {
+                    const data = event.target.result;
+                    if (file.type.startsWith('image/')) await sendMessage(`[IMAGEM]:${data}`);
+                    else if (file.type.startsWith('video/')) await sendMessage(`[VIDEO]:${data}`);
+                    else if (file.type.startsWith('audio/')) await sendMessage(`[AUDIO]:${data}`);
+                    else await sendMessage(`[ARQUIVO]:${file.name || 'arquivo'}|${data}`);
+                    resolve();
+                } catch (error) { reject(error); }
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
     function handleMessageComposerInput() {
         handleTypingEvent();
         autoResizeMessageInput();
@@ -3267,7 +3408,7 @@
 
     function startReply(messageId, senderName) {
         const bubble = document.querySelector(`[data-message-id="${messageId}"]`);
-        const text = bubble?.querySelector('.pr-12')?.innerText?.trim() || 'Mensagem';
+        const text = bubble?.querySelector('.echo-message-content')?.innerText?.trim() || 'Mensagem';
         echoReplyTarget = { id: Number(messageId), senderName, text: text.slice(0, 180) };
         document.getElementById('echo-reply-title').textContent = `Respondendo a ${senderName}`;
         document.getElementById('echo-reply-text').textContent = echoReplyTarget.text;
@@ -3481,6 +3622,7 @@
             sendMessage();
         }
     });
+    document.getElementById("message-input").addEventListener("paste", handleComposerPaste);
 
     _supabase.auth.onAuthStateChange((event) => {
         if (event === 'SIGNED_OUT') showLoginScreen();
