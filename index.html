@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat — Project Aurora Build 00022</title>
+    <title>GetChat — Project Echo Build 00023</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -560,6 +560,48 @@
         html.gc-scale-normal { --gc-ui-scale: 1; }
         html.gc-scale-large { --gc-ui-scale: 1.10; }
 
+
+        /* =======================================================
+           PROJECT ECHO — ALPHA 0.5 / BUILD 00023
+           Respostas, reações, multiline, cooldown e manutenção
+           ======================================================= */
+        #message-input {
+            resize: none;
+            min-height: 42px;
+            max-height: 132px;
+            overflow-y: auto;
+            line-height: 1.35;
+        }
+        .echo-reply-bar {
+            border-left: 3px solid var(--gc-primary);
+            background: color-mix(in srgb, var(--gc-primary) 9%, white);
+        }
+        body.dark .echo-reply-bar { background: color-mix(in srgb, var(--gc-primary) 18%, #0f172a); }
+        .echo-reply-preview {
+            border-left: 3px solid color-mix(in srgb, var(--gc-primary) 55%, transparent);
+            background: rgba(255,255,255,.42);
+        }
+        body.dark .echo-reply-preview { background: rgba(15,23,42,.48); }
+        .echo-message-actions {
+            opacity: 0;
+            transform: translateY(2px);
+            transition: opacity .15s ease, transform .15s ease;
+        }
+        .group:hover > .echo-message-actions,
+        .echo-message-actions:focus-within { opacity: 1; transform: translateY(0); }
+        @media (hover:none) { .echo-message-actions { opacity: 1; transform:none; } }
+        .echo-reaction-pill {
+            background: rgba(255,255,255,.72);
+            border: 1px solid rgba(255,255,255,.82);
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        body.dark .echo-reaction-pill { background: rgba(30,41,59,.82); border-color: rgba(148,163,184,.22); }
+        .echo-reaction-pill.mine { border-color: var(--gc-primary); background: var(--gc-primary-soft); }
+        #nudge-button:disabled { opacity:.42; cursor:not-allowed; filter:grayscale(.25); }
+        #echo-emoji-popover { max-height: 310px; overflow-y:auto; }
+        .echo-danger-card { background: rgba(254,242,242,.82); border:1px solid rgba(239,68,68,.24); }
+        body.dark .echo-danger-card { background: rgba(127,29,29,.18); }
+
     </style>
 </head>
 <body class="p-4" id="app-body">
@@ -714,6 +756,15 @@
             </div>
         </div>
 
+
+        <button type="button" onclick="showHistoryRetentionInfo()" class="w-full text-left bg-white/40 hover:bg-white/55 p-3 rounded-xl border border-white/60 flex items-start gap-3 transition-colors">
+            <span class="material-symbols-outlined text-primary">history</span>
+            <div>
+                <div class="text-xs font-bold text-on-surface">Apagar Histórico</div>
+                <p class="text-[11px] text-outline mt-0.5">As mensagens e os arquivos enviados são excluídos em até 30 dias, conforme a política definida pelo administrador.</p>
+            </div>
+        </button>
+
         <button onclick="closeSettingsModal()" class="gel-button py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
             Salvar e Concluir
         </button>
@@ -764,8 +815,8 @@
 
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
-                    <div class="text-[10px] text-outline mt-1">Alpha 0.4</div>
-                    <div class="text-[10px] text-outline">Build 00022</div>
+                    <div class="text-[10px] text-outline mt-1">Alpha 0.5</div>
+                    <div class="text-[10px] text-outline">Build 00023</div>
                 </div>
             </aside>
 
@@ -775,10 +826,15 @@
                         <h3 class="text-lg font-black text-on-surface">Usuários</h3>
                         <p class="text-[11px] text-outline">Contas, permissões e visibilidade entre profissionais.</p>
                     </div>
+                    <div class="flex items-center gap-2">
+                    <button type="button" onclick="openMasterMaintenance()" class="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-700 border border-red-200 text-xs font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base">delete_sweep</span><span class="hidden sm:inline">Manutenção</span>
+                    </button>
                     <button onclick="startMasterCreateMode()" class="gel-button text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md">
                         <span class="material-symbols-outlined text-base relative z-10">person_add</span>
                         <span class="relative z-10">Novo usuário</span>
                     </button>
+                    </div>
                 </div>
 
                 <div class="flex flex-1 min-h-0">
@@ -965,6 +1021,28 @@
     </div>
 </div>
 
+
+<!-- MANUTENÇÃO MASTER — PROJECT ECHO -->
+<div id="master-maintenance-modal" class="fixed inset-0 z-[70] hidden items-center justify-center bg-slate-950/70 backdrop-blur-md p-4">
+    <div class="glass-window w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
+        <header class="glossy-header px-5 py-4 text-white flex items-center justify-between">
+            <div><h3 class="font-black">Manutenção do histórico</h3><p class="text-[11px] text-white/75">Acesso exclusivo do Master</p></div>
+            <button type="button" onclick="closeMasterMaintenance()" class="w-9 h-9 rounded-xl bg-white/15 hover:bg-white/25"><span class="material-symbols-outlined">close</span></button>
+        </header>
+        <div class="p-5 space-y-4">
+            <div class="echo-danger-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div><h4 class="text-sm font-black text-red-700">Apagar Sala Geral</h4><p class="text-xs text-outline mt-1">Remove definitivamente todas as mensagens, respostas, reações e mídias da Sala Geral.</p></div>
+                <button type="button" onclick="clearMessageHistory('general')" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black whitespace-nowrap">Apagar Sala Geral</button>
+            </div>
+            <div class="echo-danger-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div><h4 class="text-sm font-black text-red-700">Apagar Conversas Privadas</h4><p class="text-xs text-outline mt-1">Remove definitivamente todas as mensagens, respostas, reações e mídias das conversas privadas.</p></div>
+                <button type="button" onclick="clearMessageHistory('private')" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black whitespace-nowrap">Apagar Privadas</button>
+            </div>
+            <p id="master-maintenance-status" class="text-xs text-outline min-h-[18px]"></p>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL DE AMPLIAR IMAGEM -->
 <div id="image-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md hidden" onclick="closeImageModal()">
     <div class="relative max-w-[90vw] max-h-[90vh] p-2" onclick="event.stopPropagation()">
@@ -1104,24 +1182,63 @@
 
             <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar chat-bg-cubes" id="chat-messages"></div>
 
-            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/90 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden grid grid-cols-6 gap-2 z-30">
-                <button onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1 rounded text-lg">😀</button>
-                <button onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1 rounded text-lg">😂</button>
-                <button onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1 rounded text-lg">😍</button>
-                <button onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1 rounded text-lg">😎</button>
-                <button onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1 rounded text-lg">👍</button>
-                <button onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1 rounded text-lg">🔥</button>
-                <button onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1 rounded text-lg">🎉</button>
-                <button onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1 rounded text-lg">❤️</button>
-                <button onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1 rounded text-lg">🙏</button>
-                <button onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1 rounded text-lg">🤔</button>
-                <button onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1 rounded text-lg">👋</button>
-                <button onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1 rounded text-lg">✨</button>
+            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden z-30 w-[320px] max-w-[calc(100vw-20px)]">
+                <div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-primary text-base">emoji_emotions</span><span class="text-xs font-black text-on-surface">Emojis</span></div>
+                <div id="echo-emoji-popover" class="grid grid-cols-8 gap-1 custom-scrollbar">
+                    <button type="button" onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😀</button>
+                    <button type="button" onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😂</button>
+                    <button type="button" onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😍</button>
+                    <button type="button" onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😎</button>
+                    <button type="button" onclick="insertEmoji('🥳')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🥳</button>
+                    <button type="button" onclick="insertEmoji('😊')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😊</button>
+                    <button type="button" onclick="insertEmoji('😉')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😉</button>
+                    <button type="button" onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤔</button>
+                    <button type="button" onclick="insertEmoji('😮')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😮</button>
+                    <button type="button" onclick="insertEmoji('😢')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😢</button>
+                    <button type="button" onclick="insertEmoji('😭')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😭</button>
+                    <button type="button" onclick="insertEmoji('😡')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😡</button>
+                    <button type="button" onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👍</button>
+                    <button type="button" onclick="insertEmoji('👎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👎</button>
+                    <button type="button" onclick="insertEmoji('👏')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👏</button>
+                    <button type="button" onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🙏</button>
+                    <button type="button" onclick="insertEmoji('💪')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💪</button>
+                    <button type="button" onclick="insertEmoji('🤝')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤝</button>
+                    <button type="button" onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">❤️</button>
+                    <button type="button" onclick="insertEmoji('💙')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💙</button>
+                    <button type="button" onclick="insertEmoji('💚')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💚</button>
+                    <button type="button" onclick="insertEmoji('💜')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💜</button>
+                    <button type="button" onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🔥</button>
+                    <button type="button" onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">✨</button>
+                    <button type="button" onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🎉</button>
+                    <button type="button" onclick="insertEmoji('✅')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">✅</button>
+                    <button type="button" onclick="insertEmoji('⚠️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">⚠️</button>
+                    <button type="button" onclick="insertEmoji('📌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📌</button>
+                    <button type="button" onclick="insertEmoji('📎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📎</button>
+                    <button type="button" onclick="insertEmoji('📞')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📞</button>
+                    <button type="button" onclick="insertEmoji('💻')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💻</button>
+                    <button type="button" onclick="insertEmoji('📷')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📷</button>
+                    <button type="button" onclick="insertEmoji('🚀')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🚀</button>
+                    <button type="button" onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👋</button>
+                    <button type="button" onclick="insertEmoji('👌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👌</button>
+                    <button type="button" onclick="insertEmoji('🙌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🙌</button>
+                    <button type="button" onclick="insertEmoji('💡')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💡</button>
+                    <button type="button" onclick="insertEmoji('🕒')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🕒</button>
+                    <button type="button" onclick="insertEmoji('🏥')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🏥</button>
+                    <button type="button" onclick="insertEmoji('🧠')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🧠</button>
+                    <button type="button" onclick="insertEmoji('📋')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📋</button>
+                    <button type="button" onclick="insertEmoji('🗂️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🗂️</button>
+                    <button type="button" onclick="insertEmoji('🔔')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🔔</button>
+                    <button type="button" onclick="insertEmoji('⭐')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">⭐</button>
+                    <button type="button" onclick="insertEmoji('😁')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😁</button>
+                    <button type="button" onclick="insertEmoji('😅')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😅</button>
+                    <button type="button" onclick="insertEmoji('🤗')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤗</button>
+                    <button type="button" onclick="insertEmoji('🥰')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🥰</button>
+                </div>
             </div>
 
             <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
                 <div class="flex gap-2 mb-2">
-                    <button onclick="sendNudge()" title="Chamar atenção" aria-label="Chamar atenção" class="glossy-pill w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white transition-all text-on-surface-variant shadow-sm">
+                    <button id="nudge-button" onclick="sendNudge()" title="Chamar atenção" aria-label="Chamar atenção" class="glossy-pill w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white transition-all text-on-surface-variant shadow-sm">
                         <span class="material-symbols-outlined text-lg text-amber-600">notifications</span>
                     </button>
                     
@@ -1131,9 +1248,13 @@
                     </label>
                 </div>
                 
-                <div class="flex items-center gap-2">
+                <div id="echo-reply-composer" class="echo-reply-bar hidden mb-2 rounded-xl px-3 py-2 items-center justify-between gap-3">
+                    <div class="min-w-0"><div id="echo-reply-title" class="text-[10px] font-black text-primary">Respondendo</div><div id="echo-reply-text" class="text-xs text-on-surface truncate"></div></div>
+                    <button type="button" onclick="cancelReply()" class="w-8 h-8 rounded-lg hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-base">close</span></button>
+                </div>
+                <div class="flex items-end gap-2">
                     <div class="flex-1 relative">
-                        <input id="message-input" oninput="handleTypingEvent()" class="w-full px-4 py-2.5 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm" placeholder="Digite uma mensagem..." type="text"/>
+                        <textarea id="message-input" rows="1" oninput="handleMessageComposerInput(event)" class="w-full px-4 py-2.5 pr-11 bg-white/60 border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm backdrop-blur-sm" placeholder="Digite uma mensagem..."></textarea>
                         <div class="absolute right-3 top-1/2 -translate-y-1/2 text-outline/50">
                             <span onclick="toggleEmojiPopover()" class="material-symbols-outlined cursor-pointer hover:text-primary select-none">sentiment_satisfied</span>
                         </div>
@@ -1291,6 +1412,11 @@
     const renderedMessageIds = new Set();
     const processedIncomingMessageIds = new Set();
     let masterUsersCache = [];
+    let echoReplyTarget = null;
+    let reactionSubscription = null;
+    const ECHO_REACTIONS = ['👍','❤️','😂','😮','😢'];
+    const NUDGE_COOLDOWN_MS = 30000;
+    let nudgeCooldownUntil = 0;
 
     // =======================================================
     // 3. SESSÃO & AUTENTICAÇÃO COM SUPABASE AUTH
@@ -2696,7 +2822,7 @@
 
         const { data, error } = await _supabase
             .from('mensagens')
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
             .gt('id', lastObservedMessageId)
             .order('id', { ascending: true });
 
@@ -3047,15 +3173,23 @@
             ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 overflow-hidden">${avatarMarkup}</div>` : ''}
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
                 <span class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1">${escapeHtml(senderName)}</span>
-                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group">
+                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
+                    <div id="echo-reply-preview-${msg.id}" class="hidden echo-reply-preview rounded-lg px-2.5 py-1.5 mb-2 text-[11px]"></div>
                     <div class="pr-12 pb-1">${formatMessageContent(msg.texto || '')}</div>
                     <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
+                    <div class="echo-message-actions absolute -top-3 ${isMe ? 'left-2' : 'right-2'} flex items-center gap-1 bg-white/90 dark:bg-slate-800/90 border border-white rounded-full px-1 py-0.5 shadow-md">
+                        <button type="button" onclick="startReply(${msg.id}, '${escapeHtml(senderName).replace(/'/g,"&#39;")}')" title="Responder" class="w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-sm">reply</span></button>
+                        ${ECHO_REACTIONS.map(emoji => `<button type="button" onclick="toggleReaction(${msg.id}, '${emoji}')" class="w-7 h-7 rounded-full hover:bg-black/5 text-sm">${emoji}</button>`).join('')}
+                    </div>
                 </div>
+                <div id="echo-reactions-${msg.id}" class="flex flex-wrap gap-1 mt-1"></div>
             </div>
             ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm overflow-hidden">${avatarMarkup}</div>` : ''}
         `;
 
         chatContainer.appendChild(msgWrapper);
+        if (msg.reply_to_id) loadReplyPreview(msg.reply_to_id, msg.id);
+        loadMessageReactions(msg.id);
         scrollToBottom();
     }
 
@@ -3074,7 +3208,7 @@
             const parts = texto.replace("[ARQUIVO]:", "").split("|");
             return `<div class="flex items-center gap-3 p-1.5 bg-white/50 rounded-xl border border-white/60 shadow-sm"><div class="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center text-primary flex-shrink-0"><span class="material-symbols-outlined text-xl">description</span></div><div class="flex flex-col overflow-hidden max-w-[160px]"><span class="text-xs font-bold text-on-surface truncate">${escapeHtml(parts[0])}</span></div><a href="${parts[1]}" download="${escapeHtml(parts[0])}" target="_blank" class="p-1.5 bg-primary text-white rounded-lg shadow-sm"><span class="material-symbols-outlined text-sm">download</span></a></div>`;
         }
-        return escapeHtml(texto);
+        return escapeHtml(texto).replace(/\n/g, "<br>");
     }
 
     function handleFileUpload(event) {
@@ -3118,6 +3252,103 @@
         input.focus();
     }
 
+
+    function handleMessageComposerInput() {
+        handleTypingEvent();
+        autoResizeMessageInput();
+    }
+
+    function autoResizeMessageInput() {
+        const input = document.getElementById('message-input');
+        if (!input) return;
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 132)}px`;
+    }
+
+    function startReply(messageId, senderName) {
+        const bubble = document.querySelector(`[data-message-id="${messageId}"]`);
+        const text = bubble?.querySelector('.pr-12')?.innerText?.trim() || 'Mensagem';
+        echoReplyTarget = { id: Number(messageId), senderName, text: text.slice(0, 180) };
+        document.getElementById('echo-reply-title').textContent = `Respondendo a ${senderName}`;
+        document.getElementById('echo-reply-text').textContent = echoReplyTarget.text;
+        const bar = document.getElementById('echo-reply-composer');
+        bar.classList.remove('hidden'); bar.classList.add('flex');
+        document.getElementById('message-input').focus();
+    }
+
+    function cancelReply() {
+        echoReplyTarget = null;
+        const bar = document.getElementById('echo-reply-composer');
+        if (bar) { bar.classList.add('hidden'); bar.classList.remove('flex'); }
+    }
+
+    async function loadReplyPreview(replyId, messageId) {
+        const el = document.getElementById(`echo-reply-preview-${messageId}`);
+        if (!el) return;
+        const { data } = await _supabase.from('mensagens').select('id, remetente_id, texto').eq('id', replyId).maybeSingle();
+        if (!data) { el.textContent = 'Mensagem original indisponível'; el.classList.remove('hidden'); return; }
+        const name = getMessageSenderName(data);
+        const clean = (data.texto || '').replace(/^\[(IMAGEM|VIDEO|AUDIO|ARQUIVO)\]:.*/s, '[Anexo]');
+        el.innerHTML = `<div class="font-black text-primary truncate">${escapeHtml(name)}</div><div class="truncate opacity-80">${escapeHtml(clean)}</div>`;
+        el.classList.remove('hidden');
+    }
+
+    async function toggleReaction(messageId, emoji) {
+        const { error } = await _supabase.rpc('toggle_message_reaction', { p_message_id: Number(messageId), p_emoji: emoji });
+        if (error) { console.error('Erro ao reagir:', error); alert(`Não foi possível reagir: ${error.message}`); return; }
+        loadMessageReactions(messageId);
+    }
+
+    async function loadMessageReactions(messageId) {
+        const container = document.getElementById(`echo-reactions-${messageId}`);
+        if (!container) return;
+        const { data, error } = await _supabase.rpc('get_message_reactions', { p_message_id: Number(messageId) });
+        if (error) { console.debug('Reações indisponíveis:', error.message); return; }
+        container.innerHTML = (data || []).map(r => `<button type="button" onclick="toggleReaction(${messageId}, '${r.emoji}')" class="echo-reaction-pill ${r.reacted_by_me ? 'mine' : ''} px-2 py-0.5 rounded-full text-[11px] font-bold">${r.emoji} ${r.reaction_count}</button>`).join('');
+    }
+
+    async function setupReactionRealtime() {
+        if (reactionSubscription) await _supabase.removeChannel(reactionSubscription);
+        reactionSubscription = _supabase.channel(`reactions-${currentUserProfile.id}`)
+            .on('postgres_changes', { event:'*', schema:'public', table:'message_reactions' }, payload => {
+                const id = payload.new?.message_id || payload.old?.message_id;
+                if (id) loadMessageReactions(id);
+            }).subscribe();
+    }
+
+    function showHistoryRetentionInfo() {
+        alert('O histórico não pode ser apagado pelo usuário. Mensagens e arquivos podem ser removidos em até 30 dias, conforme a política e a decisão do administrador Master.');
+    }
+
+    function openMasterMaintenance() {
+        const modal = document.getElementById('master-maintenance-modal');
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+    }
+    function closeMasterMaintenance() {
+        const modal = document.getElementById('master-maintenance-modal');
+        modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+    async function clearMessageHistory(type) {
+        const label = type === 'general' ? 'todas as mensagens da Sala Geral' : 'todas as conversas privadas';
+        if (!confirm(`Apagar definitivamente ${label}?\n\nEsta ação também remove respostas, reações e mídias e não pode ser desfeita.`)) return;
+        const status = document.getElementById('master-maintenance-status');
+        status.textContent = 'Apagando histórico...';
+        const rpc = type === 'general' ? 'master_clear_general_messages' : 'master_clear_private_messages';
+        const { data, error } = await _supabase.rpc(rpc);
+        if (error) { status.textContent = `Erro: ${error.message}`; return; }
+        status.textContent = `${Number(data || 0)} mensagem(ns) removida(s) com sucesso.`;
+        await fetchMessages();
+    }
+
+    function updateNudgeButtonState() {
+        const btn = document.getElementById('nudge-button');
+        if (!btn) return;
+        const remaining = nudgeCooldownUntil - Date.now();
+        btn.disabled = remaining > 0;
+        btn.title = remaining > 0 ? 'Aguarde um momento para chamar atenção novamente.' : 'Chamar atenção';
+        if (remaining > 0) setTimeout(updateNudgeButtonState, Math.min(remaining + 50, 1000));
+    }
+
     async function fetchMessages() {
         isInitialLoad = true;
         chatContainer.innerHTML = '';
@@ -3125,7 +3356,7 @@
 
         let query = _supabase
             .from('mensagens')
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
             .order('id', { ascending: true });
 
         if (activeDMTargetUser) {
@@ -3173,19 +3404,21 @@
                 remetente_id: currentUserProfile.id,
                 destinatario_id: activeDMTargetUser.id,
                 grupo: null,
-                texto
+                texto,
+                reply_to_id: echoReplyTarget?.id || null
             }
             : {
                 remetente_id: currentUserProfile.id,
                 destinatario_id: null,
                 grupo: mainGroup,
-                texto
+                texto,
+                reply_to_id: echoReplyTarget?.id || null
             };
 
         const { data: insertedMessage, error } = await _supabase
             .from('mensagens')
             .insert(payload)
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
             .single();
 
         if (error) {
@@ -3200,10 +3433,11 @@
             renderMessage(insertedMessage, false);
         }
 
-        if (!textToSend) input.value = '';
+        if (!textToSend) { input.value = ''; autoResizeMessageInput(); cancelReply(); }
     }
 
     async function sendNudge() {
+        if (Date.now() < nudgeCooldownUntil) return;
         if (!activeDMTargetUser && !currentUserCanAccessGeneral) return;
         const payload = activeDMTargetUser
             ? {
@@ -3222,7 +3456,7 @@
         const { data: insertedNudge, error } = await _supabase
             .from('mensagens')
             .insert(payload)
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
             .single();
 
         if (error) {
@@ -3231,6 +3465,9 @@
             return;
         }
 
+        nudgeCooldownUntil = Date.now() + NUDGE_COOLDOWN_MS;
+        updateNudgeButtonState();
+
         if (insertedNudge) {
             lastObservedMessageId = Math.max(lastObservedMessageId, Number(insertedNudge.id) || 0);
             processedIncomingMessageIds.add(insertedNudge.id);
@@ -3238,8 +3475,11 @@
         }
     }
 
-    document.getElementById("message-input").addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendMessage();
+    document.getElementById("message-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
 
     _supabase.auth.onAuthStateChange((event) => {
