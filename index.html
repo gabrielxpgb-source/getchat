@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat — Project Echo Build 00024</title>
+    <title>GetChat — Project Echo Build 00025</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -604,7 +604,7 @@
             opacity: 0;
             pointer-events: none;
             transform: translateY(2px);
-            transition: opacity .15s ease .3s, transform .15s ease .3s;
+            transition: opacity .15s ease .8s, transform .15s ease .8s;
         }
         @media (hover:hover) and (pointer:fine) {
             .echo-message-bubble:hover > .echo-message-actions {
@@ -646,6 +646,120 @@
         #echo-emoji-popover { max-height: 310px; overflow-y:auto; }
         .echo-danger-card { background: rgba(254,242,242,.82); border:1px solid rgba(239,68,68,.24); }
         body.dark .echo-danger-card { background: rgba(127,29,29,.18); }
+
+
+        /* =======================================================
+           PROJECT ECHO — BUILD 00025
+           Histórico paginado, offline, leitura e refinamentos
+           ======================================================= */
+        .echo-message-row { position: relative; }
+        .echo-message-row.echo-consecutive { margin-top: -6px; }
+        .echo-message-row.echo-consecutive .echo-sender-name,
+        .echo-message-row.echo-consecutive .echo-message-avatar { display: none !important; }
+
+
+        .echo-message-actions {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: none !important;
+        }
+
+        /* A seta de resposta surge imediatamente ao hover; reações aguardam 800 ms. */
+        .echo-reply-action {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .10s ease, transform .10s ease;
+            z-index: 5;
+        }
+        .echo-message-row[data-is-me="true"] .echo-reply-action { left: -38px; }
+        .echo-message-row[data-is-me="false"] .echo-reply-action { right: -38px; }
+
+        .echo-reaction-actions {
+            position: relative;
+            margin-top: 4px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-2px);
+            transition: opacity .14s ease .8s, transform .14s ease .8s;
+            min-height: 0;
+        }
+        @media (hover:hover) and (pointer:fine) {
+            .echo-message-bubble:hover .echo-reply-action {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .echo-message-bubble:hover + .echo-reaction-actions,
+            .echo-reaction-actions:hover {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(0);
+            }
+        }
+        @media (hover:none), (pointer:coarse) {
+            .echo-message-actions.is-open .echo-reaction-actions {
+                opacity: 1;
+                pointer-events: auto;
+                transform: none;
+                transition-delay: 0s;
+            }
+            .echo-reply-action { display: none !important; }
+        }
+
+        /* Reações aplicadas ficam definitivamente abaixo do balão. */
+        .echo-reactions-applied { margin-top: 4px; }
+
+        /* Modo noturno com balões próprios, sem aparência "lavada". */
+        body.dark .message-bubble-incoming {
+            background: rgba(30, 41, 59, .96) !important;
+            color: #f8fafc !important;
+            border-color: rgba(148,163,184,.18) !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,.18) !important;
+        }
+        body.dark .message-bubble-outgoing {
+            background: color-mix(in srgb, var(--gc-primary) 30%, #0f172a) !important;
+            color: #f8fafc !important;
+            border-color: color-mix(in srgb, var(--gc-primary) 34%, rgba(148,163,184,.18)) !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,.20) !important;
+        }
+        body.dark .message-bubble-incoming .echo-message-content,
+        body.dark .message-bubble-outgoing .echo-message-content { color: #f8fafc !important; }
+
+        .echo-read-receipt { display:inline-flex; align-items:center; line-height:1; margin-left:3px; }
+        .echo-read-receipt.is-read { color: var(--gc-primary); opacity:1 !important; }
+
+        .echo-history-loader {
+            position: sticky;
+            top: 8px;
+            z-index: 8;
+            width: fit-content;
+            margin: 0 auto 8px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.86);
+            border: 1px solid rgba(255,255,255,.92);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            font-size: 10px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        body.dark .echo-history-loader {
+            background: rgba(30,41,59,.94);
+            border-color: rgba(148,163,184,.22);
+            color: #cbd5e1;
+        }
+
+        .settings-save-sticky {
+            position: sticky;
+            bottom: calc(env(safe-area-inset-bottom) + 2px);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        #settings-modal > div {
+            padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
+        }
 
     </style>
 </head>
@@ -806,11 +920,11 @@
             <span class="material-symbols-outlined text-primary">history</span>
             <div>
                 <div class="text-xs font-bold text-on-surface">Apagar Histórico</div>
-                <p class="text-[11px] text-outline mt-0.5">As mensagens e os arquivos enviados são excluídos em até 30 dias, conforme a política definida pelo administrador.</p>
+                <p class="text-[11px] text-outline mt-0.5">Mensagens e arquivos serão removidos em até 30 dias</p>
             </div>
         </button>
 
-        <button onclick="closeSettingsModal()" class="gel-button py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
+        <button onclick="closeSettingsModal()" class="settings-save-sticky gel-button py-2.5 rounded-xl text-white font-bold text-xs shadow-md mt-2">
             Salvar e Concluir
         </button>
     </div>
@@ -861,7 +975,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.5</div>
-                    <div class="text-[10px] text-outline">Build 00024</div>
+                    <div class="text-[10px] text-outline">Build 00025</div>
                 </div>
             </aside>
 
@@ -1174,7 +1288,7 @@
             <div class="px-3 py-2">
                 <div class="relative">
                     <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-sm">search</span>
-                    <input id="search-users-input" oninput="filterUserList()" class="w-full pl-8 pr-2 py-1.5 text-xs rounded-xl bg-white/60 border border-white/70 focus:outline-none backdrop-blur-sm" placeholder="Buscar usuários online..." type="text"/>
+                    <input id="search-users-input" oninput="filterUserList()" class="w-full pl-8 pr-2 py-1.5 text-xs rounded-xl bg-white/60 border border-white/70 focus:outline-none backdrop-blur-sm" placeholder="Buscar contatos..." type="text"/>
                 </div>
             </div>
 
@@ -1197,7 +1311,7 @@
 
                 <div>
                     <div class="flex items-center justify-between px-1 mb-1.5">
-                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Usuários Online</h3>
+                        <h3 class="text-[10px] font-bold uppercase tracking-wider text-outline/80">Contatos</h3>
                         <span id="online-count-badge" class="bg-primary/20 text-primary text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
                     </div>
                     <div id="online-users-list" class="space-y-1"></div>
@@ -1461,7 +1575,11 @@
     let reactionSubscription = null;
     const ECHO_REACTIONS = ['👍','❤️','😂','😮','😢'];
     const NUDGE_COOLDOWN_MS = 30000;
+    const MESSAGE_PAGE_SIZE = 40;
     let nudgeCooldownUntil = 0;
+    let oldestLoadedMessageId = null;
+    let hasMoreMessages = true;
+    let loadingOlderMessages = false;
 
     // =======================================================
     // 3. SESSÃO & AUTENTICAÇÃO COM SUPABASE AUTH
@@ -1707,6 +1825,28 @@
         location.reload();
     }
 
+    async function loadUnreadPrivateCounts() {
+        if (!currentUserProfile?.id) return;
+        const { data, error } = await _supabase
+            .from('mensagens')
+            .select('remetente_id')
+            .is('grupo', null)
+            .eq('destinatario_id', currentUserProfile.id)
+            .is('visualizada_em', null);
+
+        if (error) {
+            console.debug('[Não lidas] Não foi possível restaurar contadores:', error.message);
+            return;
+        }
+
+        (data || []).forEach(row => {
+            if (!row.remetente_id || !visibleProfilesMap.has(row.remetente_id)) return;
+            const room = getDMRoomName(currentUserProfile.id, row.remetente_id);
+            unreadCounts.set(room, (unreadCounts.get(room) || 0) + 1);
+        });
+        updateUnreadBadgesUI();
+    }
+
     function startChat() {
         document.getElementById("app-window").classList.remove("hidden");
 
@@ -1719,6 +1859,8 @@
         updateUserAvatarUI(currentUserProfile.avatar_url);
         loadUserSettings();
         updateChatHeaderUI();
+        renderOnlineUsersList();
+        loadUnreadPrivateCounts();
         if (currentUserCanAccessGeneral) {
             fetchMessages();
         } else {
@@ -1746,7 +1888,7 @@
                     <span class="material-symbols-outlined text-3xl">chat</span>
                 </div>
                 <h3 class="text-sm font-bold text-on-surface">Selecione um contato</h3>
-                <p class="text-xs text-outline mt-1">Escolha um usuário disponível para iniciar uma conversa.</p>
+                <p class="text-xs text-outline mt-1">Escolha um contato para iniciar uma conversa.</p>
             </div>`;
         updateChatHeaderUI();
         setComposerEnabled(false);
@@ -2840,6 +2982,9 @@
          */
         if (isMessageInActiveChat(newMsg)) {
             renderMessage(newMsg, source !== 'history');
+            if (!isFromMe && newMsg.grupo === null && activeDMTargetUser?.id === newMsg.remetente_id) {
+                markActivePrivateConversationRead();
+            }
             return;
         }
 
@@ -2867,7 +3012,7 @@
 
         const { data, error } = await _supabase
             .from('mensagens')
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id, visualizada_em')
             .gt('id', lastObservedMessageId)
             .order('id', { ascending: true });
 
@@ -2953,6 +3098,13 @@
             }, payload => {
                 processIncomingMessage(payload.new, 'realtime');
             })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'mensagens'
+            }, payload => {
+                updateReadReceiptForMessage(payload.new);
+            })
             .subscribe(status => {
                 console.info(`[Realtime mensagens] ${status}`);
 
@@ -2994,8 +3146,8 @@
     function updateUnreadBadgesUI() {
         const totalUnread = Array.from(unreadCounts.values()).reduce((sum, value) => sum + Number(value || 0), 0);
         document.title = totalUnread > 0
-            ? `(${totalUnread}) GetChat — Project Echo Build 00024`
-            : 'GetChat — Project Echo Build 00024';
+            ? `(${totalUnread}) GetChat — Project Echo Build 00025`
+            : 'GetChat — Project Echo Build 00025';
         const badge = document.getElementById('unread-main-group');
         if (!currentUserCanAccessGeneral) {
             badge.classList.add('hidden');
@@ -3129,24 +3281,35 @@
     function renderOnlineUsersList() {
         const container = document.getElementById('online-users-list');
         const badge = document.getElementById('online-count-badge');
-        const filterText = document.getElementById('search-users-input').value.toLowerCase();
+        const filterText = (document.getElementById('search-users-input')?.value || '').toLowerCase();
 
         container.innerHTML = '';
-        const onlineUserIds = Array.from(onlineUsersMap.keys());
-        badge.innerText = onlineUserIds.length;
 
-        if (onlineUserIds.length === 0) {
-            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum contato autorizado está online.</p>`;
+        const contacts = Array.from(visibleProfilesMap.values())
+            .filter(profile => profile.id !== currentUserProfile?.id && profile.is_banned !== true)
+            .filter(profile => {
+                const searchableText = `${profile.nome_exibicao || ''} ${profile.username || ''}`.toLowerCase();
+                return !filterText || searchableText.includes(filterText);
+            })
+            .sort((a, b) => {
+                const aOnline = onlineUsersMap.has(a.id) ? 1 : 0;
+                const bOnline = onlineUsersMap.has(b.id) ? 1 : 0;
+                if (aOnline !== bOnline) return bOnline - aOnline;
+                return (a.nome_exibicao || a.username || '').localeCompare(b.nome_exibicao || b.username || '', 'pt-BR');
+            });
+
+        const onlineCount = contacts.filter(profile => onlineUsersMap.has(profile.id)).length;
+        badge.innerText = onlineCount;
+        badge.title = `${onlineCount} contato(s) online`;
+
+        if (!contacts.length) {
+            container.innerHTML = `<p class="text-[11px] text-outline italic px-1 py-2">Nenhum contato autorizado encontrado.</p>`;
             return;
         }
 
-        onlineUserIds.forEach(userId => {
-            const profile = visibleProfilesMap.get(userId);
-            if (!profile) return;
-
-            const searchableText = `${profile.nome_exibicao} ${profile.username}`.toLowerCase();
-            if (filterText && !searchableText.includes(filterText)) return;
-
+        contacts.forEach(profile => {
+            const userId = profile.id;
+            const isOnline = onlineUsersMap.has(userId);
             const isCurrentDM = activeDMTargetUser?.id === userId;
             const dmRoom = getDMRoomName(currentUserProfile.id, userId);
             const unread = unreadCounts.get(dmRoom) || 0;
@@ -3167,11 +3330,14 @@
                         <div class="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold overflow-hidden">
                             ${avatarUrl
                                 ? `<img src="${escapeHtml(avatarUrl)}" class="w-full h-full object-cover"/>`
-                                : `<span class="material-symbols-outlined text-sm">person</span>`}
+                                : `<span class="avatar-initials text-[10px]">${escapeHtml(getUserInitials(profile))}</span>`}
                         </div>
-                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+                        <span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${isOnline ? 'bg-green-500' : 'bg-slate-400'} rounded-full border-2 border-white"></span>
                     </div>
-                    <span class="truncate">@${escapeHtml(profile.nome_exibicao)}</span>
+                    <div class="min-w-0 flex flex-col">
+                        <span class="truncate">@${escapeHtml(profile.nome_exibicao || profile.username)}</span>
+                        <span class="text-[9px] ${isOnline ? 'text-green-600' : 'text-outline'} font-medium">${isOnline ? 'Online' : 'Offline'}</span>
+                    </div>
                 </div>
                 <div>${unread > 0
                     ? `<span class="bg-red-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">${unread}</span>`
@@ -3186,7 +3352,32 @@
 
     const chatContainer = document.getElementById('chat-messages');
 
-    function renderMessage(msg, isRealtime = false) {
+    function applyConsecutiveMessageGrouping() {
+        let previousMessageRow = null;
+        document.querySelectorAll('#chat-messages > [data-message-kind]').forEach(row => {
+            if (row.dataset.messageKind !== 'message') {
+                previousMessageRow = null;
+                return;
+            }
+            const sameSender = previousMessageRow
+                && previousMessageRow.dataset.senderId === row.dataset.senderId;
+            row.classList.toggle('echo-consecutive', Boolean(sameSender));
+            previousMessageRow = row;
+        });
+    }
+
+    function updateReadReceiptForMessage(msg) {
+        if (!msg?.id) return;
+        const el = document.getElementById(`echo-read-${msg.id}`);
+        if (!el) return;
+        const read = Boolean(msg.visualizada_em);
+        el.classList.toggle('is-read', read);
+        el.title = read ? 'Visualizada' : 'Enviada';
+        el.innerHTML = `<span class="material-symbols-outlined" style="font-size:12px">${read ? 'done_all' : 'done'}</span>`;
+    }
+
+    function renderMessage(msg, isRealtime = false, options = {}) {
+        const { prepend = false, suppressScroll = false } = options;
         if (msg?.id && renderedMessageIds.has(msg.id)) return;
         if (msg?.id) renderedMessageIds.add(msg.id);
 
@@ -3201,9 +3392,12 @@
         if (msg.texto === '__NUDGE__') {
             const nudgeDiv = document.createElement('div');
             nudgeDiv.className = 'flex justify-center my-2';
+            nudgeDiv.dataset.messageKind = 'nudge';
+            nudgeDiv.dataset.messageId = String(msg.id || '');
             nudgeDiv.innerHTML = `<div class="bg-amber-200/90 text-amber-900 px-4 py-1.5 rounded-full shadow border border-amber-300 flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-base">notifications_active</span><span>${escapeHtml(senderName)} chamou a atenção!</span></div>`;
-            chatContainer.appendChild(nudgeDiv);
-            scrollToBottom();
+            prepend ? chatContainer.prepend(nudgeDiv) : chatContainer.appendChild(nudgeDiv);
+            applyConsecutiveMessageGrouping();
+            if (!suppressScroll && !prepend) scrollToBottom();
             if (isRealtime && !isMe) triggerNudgeEffect();
             return;
         }
@@ -3211,36 +3405,51 @@
         if (isRealtime && !isMe) playSound('message');
 
         const msgWrapper = document.createElement('div');
-        msgWrapper.className = `flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
+        msgWrapper.className = `echo-message-row flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}`;
+        msgWrapper.dataset.messageKind = 'message';
+        msgWrapper.dataset.senderId = msg.remetente_id || '';
+        msgWrapper.dataset.isMe = isMe ? 'true' : 'false';
+        msgWrapper.dataset.messageId = String(msg.id || '');
         const avatarUrl = senderProfile?.avatar_url;
 
         const avatarMarkup = avatarUrl
             ? `<img src="${escapeHtml(avatarUrl)}" class="w-full h-full object-cover"/>`
-            : `<span class="material-symbols-outlined text-base">person</span>`;
+            : `<span class="avatar-initials text-[9px]">${escapeHtml(getUserInitials(senderProfile || { nome_exibicao: senderName }))}</span>`;
+
+        const reactionButtons = ECHO_REACTIONS.map(emoji =>
+            `<button type="button" onclick="toggleReaction(${msg.id}, '${emoji}')" class="w-7 h-7 rounded-full hover:bg-black/5 text-sm">${emoji}</button>`
+        ).join('');
+
+        const senderButton = `<button type="button" ${(!isMe && !activeDMTargetUser) ? `onclick="startPrivateChat('${msg.remetente_id}')" title="Abrir conversa privada com ${escapeHtml(senderName)}"` : 'disabled'} class="echo-sender-name text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1 ${(!isMe && !activeDMTargetUser) ? 'echo-sender-link' : 'cursor-default'}">${escapeHtml(senderName)}</button>`;
 
         msgWrapper.innerHTML = `
-            ${!isMe ? `<div class="w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 overflow-hidden">${avatarMarkup}</div>` : ''}
-            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%]">
-                <button type="button" ${(!isMe && !activeDMTargetUser) ? `onclick="startPrivateChat('${msg.remetente_id}')" title="Abrir conversa privada com ${escapeHtml(senderName)}"` : 'disabled'} class="text-[10px] font-bold ${isMe ? 'text-primary' : 'text-outline'} mb-0.5 px-1 ${(!isMe && !activeDMTargetUser) ? 'echo-sender-link' : 'cursor-default'}">${escapeHtml(senderName)}</button>
-                <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} echo-message-bubble px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
-                    <div id="echo-reply-preview-${msg.id}" class="hidden echo-reply-preview rounded-lg px-2.5 py-1.5 mb-2 text-[11px]"></div>
-                    <div class="pr-12 pb-1 echo-message-content">${formatMessageContent(msg.texto || '')}</div>
-                    <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none">${timeFormatted}</span>
-                    <div class="echo-message-actions absolute -top-3 ${isMe ? 'left-2' : 'right-2'} flex items-center gap-1 bg-white/90 dark:bg-slate-800/90 border border-white rounded-full px-1 py-0.5 shadow-md">
-                        <button type="button" onclick="startReply(${msg.id}, '${escapeHtml(senderName).replace(/'/g,"&#39;")}')" title="Responder" class="echo-reply-action w-7 h-7 rounded-full hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-sm">reply</span></button>
-                        <div class="echo-reaction-actions flex items-center gap-1">${ECHO_REACTIONS.map(emoji => `<button type="button" onclick="toggleReaction(${msg.id}, '${emoji}')" class="w-7 h-7 rounded-full hover:bg-black/5 text-sm">${emoji}</button>`).join('')}</div>
+            ${!isMe ? `<div class="echo-message-avatar w-7 h-7 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 overflow-hidden">${avatarMarkup}</div>` : ''}
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[75%] min-w-0">
+                ${senderButton}
+                <div class="echo-message-actions relative ${isMe ? 'items-end' : 'items-start'} flex flex-col">
+                    <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} echo-message-bubble px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
+                        <div id="echo-reply-preview-${msg.id}" class="hidden echo-reply-preview rounded-lg px-2.5 py-1.5 mb-2 text-[11px]"></div>
+                        <div class="pr-12 pb-1 echo-message-content">${formatMessageContent(msg.texto || '')}</div>
+                        <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none flex items-center">
+                            ${timeFormatted}
+                            ${isMe && msg.grupo === null ? `<span id="echo-read-${msg.id}" class="echo-read-receipt ${msg.visualizada_em ? 'is-read' : ''}" title="${msg.visualizada_em ? 'Visualizada' : 'Enviada'}"><span class="material-symbols-outlined" style="font-size:12px">${msg.visualizada_em ? 'done_all' : 'done'}</span></span>` : ''}
+                        </span>
+                        <button type="button" onclick="startReply(${msg.id}, '${escapeHtml(senderName).replace(/'/g,"&#39;")}')" title="Responder" class="echo-reply-action w-7 h-7 rounded-full bg-white/90 dark:bg-slate-800/90 border border-white shadow-md hover:bg-white flex items-center justify-center"><span class="material-symbols-outlined text-sm">reply</span></button>
                     </div>
+                    <div class="echo-reaction-actions flex items-center gap-1 bg-white/90 dark:bg-slate-800/90 border border-white rounded-full px-1 py-0.5 shadow-md">${reactionButtons}</div>
                 </div>
-                <div id="echo-reactions-${msg.id}" class="flex flex-wrap gap-1 mt-1"></div>
+                <div id="echo-reactions-${msg.id}" class="echo-reactions-applied flex flex-wrap gap-1"></div>
             </div>
-            ${isMe ? `<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm overflow-hidden">${avatarMarkup}</div>` : ''}
+            ${isMe ? `<div class="echo-message-avatar w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs flex-shrink-0 mt-1 shadow-sm overflow-hidden">${avatarMarkup}</div>` : ''}
         `;
 
-        chatContainer.appendChild(msgWrapper);
+        prepend ? chatContainer.prepend(msgWrapper) : chatContainer.appendChild(msgWrapper);
         setupEchoMessageInteractions(msgWrapper, msg, senderName);
         if (msg.reply_to_id) loadReplyPreview(msg.reply_to_id, msg.id);
         loadMessageReactions(msg.id);
-        scrollToBottom();
+        updateReadReceiptForMessage(msg);
+        applyConsecutiveMessageGrouping();
+        if (!suppressScroll && !prepend) scrollToBottom();
     }
 
     function formatMessageContent(texto) {
@@ -3458,7 +3667,7 @@
     }
 
     function showHistoryRetentionInfo() {
-        alert('O histórico não pode ser apagado pelo usuário. Mensagens e arquivos podem ser removidos em até 30 dias, conforme a política e a decisão do administrador Master.');
+        alert('Mensagens e arquivos serão removidos em até 30 dias');
     }
 
     function openMasterMaintenance() {
@@ -3490,15 +3699,10 @@
         if (remaining > 0) setTimeout(updateNudgeButtonState, Math.min(remaining + 50, 1000));
     }
 
-    async function fetchMessages() {
-        isInitialLoad = true;
-        chatContainer.innerHTML = '';
-        renderedMessageIds.clear();
-
+    function buildActiveMessagesQuery() {
         let query = _supabase
             .from('mensagens')
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
-            .order('id', { ascending: true });
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id, visualizada_em');
 
         if (activeDMTargetUser) {
             const currentId = currentUserProfile.id;
@@ -3508,16 +3712,53 @@
                 .or(
                     `and(remetente_id.eq.${currentId},destinatario_id.eq.${targetId}),and(remetente_id.eq.${targetId},destinatario_id.eq.${currentId})`
                 );
-        } else {
-            if (!currentUserCanAccessGeneral) {
-                showNoConversationSelected();
-                isInitialLoad = false;
-                return;
-            }
+        } else if (currentUserCanAccessGeneral) {
             query = query.eq('grupo', mainGroup);
         }
+        return query;
+    }
 
-        const { data, error } = await query;
+    async function markActivePrivateConversationRead() {
+        if (!activeDMTargetUser?.id) return;
+        const { error } = await _supabase.rpc('mark_private_messages_read', {
+            p_other_user: activeDMTargetUser.id
+        });
+        if (error) console.debug('[Leitura] Não foi possível atualizar visualização:', error.message);
+    }
+
+    function showHistoryLoader(textValue) {
+        let loader = document.getElementById('echo-history-loader');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.id = 'echo-history-loader';
+            loader.className = 'echo-history-loader';
+            chatContainer.prepend(loader);
+        }
+        loader.textContent = textValue;
+        return loader;
+    }
+
+    function hideHistoryLoader() {
+        document.getElementById('echo-history-loader')?.remove();
+    }
+
+    async function fetchMessages() {
+        isInitialLoad = true;
+        chatContainer.innerHTML = '';
+        renderedMessageIds.clear();
+        oldestLoadedMessageId = null;
+        hasMoreMessages = true;
+        loadingOlderMessages = false;
+
+        if (!activeDMTargetUser && !currentUserCanAccessGeneral) {
+            showNoConversationSelected();
+            isInitialLoad = false;
+            return;
+        }
+
+        const { data, error } = await buildActiveMessagesQuery()
+            .order('id', { ascending: false })
+            .limit(MESSAGE_PAGE_SIZE);
 
         if (error) {
             console.error('Erro ao carregar mensagens:', error);
@@ -3526,12 +3767,63 @@
             return;
         }
 
-        (data || []).forEach(msg => {
+        const rows = data || [];
+        hasMoreMessages = rows.length === MESSAGE_PAGE_SIZE;
+        oldestLoadedMessageId = rows.length ? Math.min(...rows.map(msg => Number(msg.id))) : null;
+
+        rows.slice().reverse().forEach(msg => {
             lastObservedMessageId = Math.max(lastObservedMessageId, Number(msg.id) || 0);
             processedIncomingMessageIds.add(msg.id);
-            renderMessage(msg, false);
+            renderMessage(msg, false, { suppressScroll: true });
         });
+
+        applyConsecutiveMessageGrouping();
+        scrollToBottom();
         isInitialLoad = false;
+        if (activeDMTargetUser) await markActivePrivateConversationRead();
+    }
+
+    async function loadOlderMessages() {
+        if (loadingOlderMessages || !hasMoreMessages || !oldestLoadedMessageId) return;
+        if (!activeDMTargetUser && !currentUserCanAccessGeneral) return;
+
+        loadingOlderMessages = true;
+        const oldScrollHeight = chatContainer.scrollHeight;
+        showHistoryLoader('Carregando mensagens anteriores...');
+
+        try {
+            const { data, error } = await buildActiveMessagesQuery()
+                .lt('id', oldestLoadedMessageId)
+                .order('id', { ascending: false })
+                .limit(MESSAGE_PAGE_SIZE);
+
+            if (error) throw error;
+            hideHistoryLoader();
+
+            const rows = data || [];
+            hasMoreMessages = rows.length === MESSAGE_PAGE_SIZE;
+            if (rows.length) {
+                oldestLoadedMessageId = Math.min(...rows.map(msg => Number(msg.id)));
+                /* A consulta vem do mais novo para o mais antigo; prepend nesta ordem mantém a cronologia. */
+                rows.forEach(msg => {
+                    processedIncomingMessageIds.add(msg.id);
+                    renderMessage(msg, false, { prepend: true, suppressScroll: true });
+                });
+                applyConsecutiveMessageGrouping();
+                const newScrollHeight = chatContainer.scrollHeight;
+                chatContainer.scrollTop += (newScrollHeight - oldScrollHeight);
+            }
+
+            if (!hasMoreMessages) {
+                const end = showHistoryLoader('Início da conversa');
+                setTimeout(() => end?.remove(), 1400);
+            }
+        } catch (error) {
+            hideHistoryLoader();
+            console.warn('Erro ao carregar mensagens anteriores:', error);
+        } finally {
+            loadingOlderMessages = false;
+        }
     }
 
     async function sendMessage(textToSend = null) {
@@ -3559,7 +3851,7 @@
         const { data: insertedMessage, error } = await _supabase
             .from('mensagens')
             .insert(payload)
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id, visualizada_em')
             .single();
 
         if (error) {
@@ -3597,7 +3889,7 @@
         const { data: insertedNudge, error } = await _supabase
             .from('mensagens')
             .insert(payload)
-            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id')
+            .select('id, created_at, remetente_id, destinatario_id, grupo, texto, arquivo_url, reply_to_id, visualizada_em')
             .single();
 
         if (error) {
@@ -3622,6 +3914,10 @@
             sendMessage();
         }
     });
+    chatContainer.addEventListener('scroll', () => {
+        if (chatContainer.scrollTop < 70) loadOlderMessages();
+    }, { passive: true });
+
     document.getElementById("message-input").addEventListener("paste", handleComposerPaste);
 
     _supabase.auth.onAuthStateChange((event) => {
