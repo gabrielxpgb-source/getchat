@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>GetChat — Project Echo Build 00025</title>
+    <title>GetChat — Project Echo Build 00026</title>
     
     <!-- Tailwind CDN & Fontes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -761,6 +761,101 @@
             padding-bottom: calc(1.5rem + env(safe-area-inset-bottom)) !important;
         }
 
+
+        /* =======================================================
+           PROJECT ECHO — BUILD 00026
+           Refinamento de agrupamento, ações e emojis
+           ======================================================= */
+        /* Mensagens consecutivas ficam visualmente agrupadas, sem “buracos”. */
+        #chat-messages { row-gap: 0 !important; }
+        .echo-message-row { margin-top: 10px; }
+        .echo-message-row.echo-consecutive { margin-top: 3px !important; }
+        .echo-message-row.echo-consecutive .echo-reactions-applied { margin-top: 1px; }
+        .echo-reactions-applied { margin-top: 2px !important; min-height: 0; }
+
+        /* Ações não participam do fluxo: não criam espaço entre os balões. */
+        .echo-message-actions { position: relative; }
+        .echo-reaction-actions {
+            position: absolute !important;
+            top: calc(100% + 3px);
+            margin-top: 0 !important;
+            z-index: 18;
+            white-space: nowrap;
+        }
+        .echo-message-row[data-is-me="true"] .echo-reaction-actions { right: 0; }
+        .echo-message-row[data-is-me="false"] .echo-reaction-actions { left: 0; }
+
+        /* Pequena seta fixa no canto do balão: 300 ms no desktop. */
+        .echo-reply-action {
+            width: 24px !important;
+            height: 24px !important;
+            top: 5px !important;
+            margin: 0 !important;
+            border-radius: 999px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: scale(.92) !important;
+            transition: opacity .12s ease .30s, transform .12s ease .30s !important;
+            z-index: 20;
+        }
+        .echo-message-row[data-is-me="true"] .echo-reply-action { left: -10px !important; right: auto !important; }
+        .echo-message-row[data-is-me="false"] .echo-reply-action { right: -10px !important; left: auto !important; }
+        @media (hover:hover) and (pointer:fine) {
+            .echo-message-actions:hover .echo-reply-action,
+            .echo-reply-action:hover {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                transform: scale(1) !important;
+            }
+            .echo-message-actions:hover .echo-reaction-actions,
+            .echo-reaction-actions:hover {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(0);
+                transition-delay: .8s;
+            }
+        }
+        @media (hover:none), (pointer:coarse) {
+            .echo-reply-action { display: none !important; }
+            .echo-message-actions.is-open .echo-reaction-actions {
+                position: absolute !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                transform: none !important;
+                transition-delay: 0s !important;
+            }
+        }
+
+        /* Emoji isolado ganha destaque, sem alterar emojis dentro de frases. */
+        .echo-message-content.echo-single-emoji {
+            font-size: 2rem !important;
+            line-height: 1.15 !important;
+            padding-top: 2px;
+            padding-bottom: 8px !important;
+        }
+
+        /* Picker completo e categorizado. */
+        #emoji-popover { width: min(390px, calc(100vw - 20px)) !important; }
+        #echo-emoji-popover { max-height: 285px; overflow-y: auto; display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 3px; }
+        .echo-emoji-btn { font-size: 1.35rem; line-height: 1; padding: 6px 2px; border-radius: 8px; }
+        .echo-emoji-btn:hover { background: rgba(0,0,0,.06); }
+        body.dark .echo-emoji-btn:hover { background: rgba(255,255,255,.08); }
+        .echo-emoji-category.active { background: var(--gc-primary-soft); color: var(--gc-primary); }
+        #emoji-search { min-width: 0; }
+
+        /* Indicador de digitação passa para a barra de ações, junto ao clipe. */
+        #typing-indicator {
+            min-height: 36px;
+            max-width: min(300px, 55vw);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @media (max-width: 767px) {
+            #typing-indicator { max-width: calc(100vw - 130px); font-size: 10px; padding-left: 8px; padding-right: 8px; }
+            #echo-emoji-popover { grid-template-columns: repeat(7,minmax(0,1fr)); }
+        }
+
     </style>
 </head>
 <body class="p-4" id="app-body">
@@ -975,7 +1070,7 @@
                 <div class="mt-auto rounded-2xl bg-white/55 border border-white/70 p-3.5">
                     <div class="text-xs font-black text-on-surface">GetChat</div>
                     <div class="text-[10px] text-outline mt-1">Alpha 0.5</div>
-                    <div class="text-[10px] text-outline">Build 00025</div>
+                    <div class="text-[10px] text-outline">Build 00026</div>
                 </div>
             </aside>
 
@@ -1333,66 +1428,22 @@
                     <span id="chat-type-icon" class="material-symbols-outlined text-primary text-base">forum</span>
                     <h2 id="current-chat-title-header" class="text-xs font-bold text-on-surface">Histórico de Mensagens</h2>
                 </div>
-                <span id="typing-indicator" class="hidden text-xs text-primary font-medium flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-                    <span id="typing-username">Alguém</span> está digitando
-                    <span class="dot-flashing ml-2 mr-1"></span>
-                </span>
+
             </div>
 
             <div class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar chat-bg-cubes" id="chat-messages"></div>
 
-            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden z-30 w-[320px] max-w-[calc(100vw-20px)]">
-                <div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-primary text-base">emoji_emotions</span><span class="text-xs font-black text-on-surface">Emojis</span></div>
-                <div id="echo-emoji-popover" class="grid grid-cols-8 gap-1 custom-scrollbar">
-                    <button type="button" onclick="insertEmoji('😀')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😀</button>
-                    <button type="button" onclick="insertEmoji('😂')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😂</button>
-                    <button type="button" onclick="insertEmoji('😍')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😍</button>
-                    <button type="button" onclick="insertEmoji('😎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😎</button>
-                    <button type="button" onclick="insertEmoji('🥳')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🥳</button>
-                    <button type="button" onclick="insertEmoji('😊')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😊</button>
-                    <button type="button" onclick="insertEmoji('😉')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😉</button>
-                    <button type="button" onclick="insertEmoji('🤔')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤔</button>
-                    <button type="button" onclick="insertEmoji('😮')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😮</button>
-                    <button type="button" onclick="insertEmoji('😢')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😢</button>
-                    <button type="button" onclick="insertEmoji('😭')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😭</button>
-                    <button type="button" onclick="insertEmoji('😡')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😡</button>
-                    <button type="button" onclick="insertEmoji('👍')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👍</button>
-                    <button type="button" onclick="insertEmoji('👎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👎</button>
-                    <button type="button" onclick="insertEmoji('👏')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👏</button>
-                    <button type="button" onclick="insertEmoji('🙏')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🙏</button>
-                    <button type="button" onclick="insertEmoji('💪')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💪</button>
-                    <button type="button" onclick="insertEmoji('🤝')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤝</button>
-                    <button type="button" onclick="insertEmoji('❤️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">❤️</button>
-                    <button type="button" onclick="insertEmoji('💙')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💙</button>
-                    <button type="button" onclick="insertEmoji('💚')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💚</button>
-                    <button type="button" onclick="insertEmoji('💜')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💜</button>
-                    <button type="button" onclick="insertEmoji('🔥')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🔥</button>
-                    <button type="button" onclick="insertEmoji('✨')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">✨</button>
-                    <button type="button" onclick="insertEmoji('🎉')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🎉</button>
-                    <button type="button" onclick="insertEmoji('✅')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">✅</button>
-                    <button type="button" onclick="insertEmoji('⚠️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">⚠️</button>
-                    <button type="button" onclick="insertEmoji('📌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📌</button>
-                    <button type="button" onclick="insertEmoji('📎')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📎</button>
-                    <button type="button" onclick="insertEmoji('📞')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📞</button>
-                    <button type="button" onclick="insertEmoji('💻')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💻</button>
-                    <button type="button" onclick="insertEmoji('📷')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📷</button>
-                    <button type="button" onclick="insertEmoji('🚀')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🚀</button>
-                    <button type="button" onclick="insertEmoji('👋')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👋</button>
-                    <button type="button" onclick="insertEmoji('👌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">👌</button>
-                    <button type="button" onclick="insertEmoji('🙌')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🙌</button>
-                    <button type="button" onclick="insertEmoji('💡')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">💡</button>
-                    <button type="button" onclick="insertEmoji('🕒')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🕒</button>
-                    <button type="button" onclick="insertEmoji('🏥')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🏥</button>
-                    <button type="button" onclick="insertEmoji('🧠')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🧠</button>
-                    <button type="button" onclick="insertEmoji('📋')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">📋</button>
-                    <button type="button" onclick="insertEmoji('🗂️')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🗂️</button>
-                    <button type="button" onclick="insertEmoji('🔔')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🔔</button>
-                    <button type="button" onclick="insertEmoji('⭐')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">⭐</button>
-                    <button type="button" onclick="insertEmoji('😁')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😁</button>
-                    <button type="button" onclick="insertEmoji('😅')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">😅</button>
-                    <button type="button" onclick="insertEmoji('🤗')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🤗</button>
-                    <button type="button" onclick="insertEmoji('🥰')" class="hover:bg-black/5 p-1.5 rounded-lg text-xl">🥰</button>
+            <div id="emoji-popover" class="absolute bottom-20 right-16 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-white shadow-xl hidden z-30 max-w-[calc(100vw-20px)]">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">emoji_emotions</span><span class="text-xs font-black text-on-surface">Emojis</span></div>
+                    <button type="button" onclick="toggleEmojiPopover(false)" class="w-7 h-7 rounded-lg hover:bg-black/5 flex items-center justify-center"><span class="material-symbols-outlined text-base">close</span></button>
                 </div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-outline text-base">search</span>
+                    <input id="emoji-search" type="search" oninput="filterEmojiPicker(this.value)" placeholder="Buscar emoji..." class="flex-1 px-2.5 py-1.5 text-xs rounded-lg bg-white/70 border border-white/80 focus:ring-primary/20"/>
+                </div>
+                <div id="emoji-category-tabs" class="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-2 mb-1"></div>
+                <div id="echo-emoji-popover" class="custom-scrollbar"></div>
             </div>
 
             <div class="p-4 bg-white/70 backdrop-blur-md border-t border-white/50 shadow-md">
@@ -1405,6 +1456,12 @@
                         <span class="material-symbols-outlined text-lg">attach_file</span>
                         <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)"/>
                     </label>
+
+                    <span id="typing-indicator" class="hidden text-xs text-primary font-medium items-center gap-2 bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                        <span class="material-symbols-outlined text-sm">edit</span>
+                        <span><span id="typing-username">Alguém</span> está digitando</span>
+                        <span class="dot-flashing ml-1 mr-1"></span>
+                    </span>
                 </div>
                 
                 <div id="echo-reply-composer" class="echo-reply-bar hidden mb-2 rounded-xl px-3 py-2 items-center justify-between gap-3">
@@ -1574,6 +1631,26 @@
     let echoReplyTarget = null;
     let reactionSubscription = null;
     const ECHO_REACTIONS = ['👍','❤️','😂','😮','😢'];
+    function emojiGraphemes(value) {
+        if (typeof Intl !== 'undefined' && Intl.Segmenter) return [...new Intl.Segmenter(undefined,{granularity:'grapheme'}).segment(value)].map(x=>x.segment);
+        return Array.from(value);
+    }
+    const ECHO_EMOJI_CATEGORIES = [
+        { key:'recent', icon:'🕘', label:'Recentes', emojis:[] },
+        { key:'smileys', icon:'😀', label:'Carinhas', emojis:emojiGraphemes('😀😃😄😁😆😅😂🤣🥲🥹😊😇🙂🙃😉😌😍🥰😘😗😙😚😋😛😝😜🤪🤨🧐🤓😎🥸🤩🥳🙂‍↕️😏😒🙂‍↔️😞😔😟😕🙁☹️😣😖😫😩🥺😢😭😮‍💨😤😠😡🤬🤯😳🥵🥶😱😨😰😥😓🤗🤔🫣🤭🫢🫡🤫🫠🤥😶😶‍🌫️😐😑😬🫨🙄😯😦😧😮😲🥱😴🤤😪😵😵‍💫🤐🥴🤢🤮🤧😷🤒🤕🤑🤠😈👿👹👺🤡💩👻💀☠️👽👾🤖🎃😺😸😹😻😼😽🙀😿😾') },
+        { key:'gestures', icon:'👍', label:'Gestos', emojis:emojiGraphemes('👋🤚🖐️✋🖖🫱🫲🫳🫴👌🤌🤏✌️🤞🫰🤟🤘🤙👈👉👆👇☝️🫵👍👎✊👊🤛🤜👏🙌🫶👐🤲🤝🙏✍️💅🤳💪🦾🦿🦵🦶👂🦻👃🧠🫀🫁🦷🦴👀👁️👅👄🫦💋🩸') },
+        { key:'people', icon:'🧑', label:'Pessoas', emojis:emojiGraphemes('👶🧒👦👧🧑👱👨🧔👩🧓👴👵🙍🙎🙅🙆💁🙋🧏🙇🤦🤷👮🕵️💂🥷👷🫅🤴👸👳👲🧕🤵👰🤰🫃🫄🤱👼🎅🤶🦸🦹🧙🧚🧛🧜🧝🧞🧟💆💇🚶🧍🧎🏃💃🕺🕴️👯🧖🧗🤺🏇⛷️🏂🏌️🏄🚣🏊⛹️🏋️🚴🚵🤸🤼🤽🤾🤹🧘🛀🛌👭👫👬💏💑👪🗣️👤👥🫂') },
+        { key:'animals', icon:'🐶', label:'Animais', emojis:emojiGraphemes('🐵🐒🦍🦧🐶🐕🦮🐕‍🦺🐩🐺🦊🦝🐱🐈🐈‍⬛🦁🐯🐅🐆🐴🫎🫏🐎🦄🦓🦌🦬🐮🐂🐃🐄🐷🐖🐗🐽🐏🐑🐐🐪🐫🦙🦒🐘🦣🦏🦛🐭🐁🐀🐹🐰🐇🐿️🦫🦔🦇🐻🐻‍❄️🐨🐼🦥🦦🦨🦘🦡🐾🦃🐔🐓🐣🐤🐥🐦🐧🕊️🦅🦆🦢🦉🦤🪶🦩🦚🦜🪽🐦‍⬛🐦‍🔥🐸🐊🐢🦎🐍🐲🐉🦕🦖🐳🐋🐬🦭🐟🐠🐡🦈🐙🐚🪸🪼🐌🦋🐛🐜🐝🪲🐞🦗🪳🕷️🦂🦟🪰🪱🦠') },
+        { key:'food', icon:'🍕', label:'Comida', emojis:emojiGraphemes('🍏🍎🍐🍊🍋🍋‍🟩🍌🍉🍇🍓🫐🍈🍒🍑🥭🍍🥥🥝🍅🍆🥑🫛🥦🥬🥒🌶️🫑🌽🥕🫒🧄🧅🥔🍠🫚🥐🥯🍞🥖🥨🧀🥚🍳🧈🥞🧇🥓🥩🍗🍖🌭🍔🍟🍕🫓🥪🥙🧆🌮🌯🫔🥗🥘🫕🥫🍝🍜🍲🍛🍣🍱🥟🦪🍤🍙🍚🍘🍥🥠🥮🍢🍡🍧🍨🍦🥧🧁🍰🎂🍮🍭🍬🍫🍿🍩🍪🌰🥜🫘🍯🥛🍼🫖☕🍵🧃🥤🧋🍶🍺🍻🥂🍷🥃🍸🍹🍾🧊🥄🍴🍽️🥣🥡🥢🧂') },
+        { key:'activities', icon:'⚽', label:'Atividades', emojis:emojiGraphemes('⚽🏀🏈⚾🥎🎾🏐🏉🥏🎱🪀🏓🏸🏒🏑🥍🏏🪃🥅⛳🪁🏹🎣🤿🥊🥋🎽🛹🛼🛷⛸️🥌🎿⛷️🏂🪂🏋️🤼🤸⛹️🤺🤾🏌️🏇🧘🏄🏊🤽🚣🧗🚵🚴🏆🥇🥈🥉🏅🎖️🏵️🎗️🎫🎟️🎪🤹🎭🩰🎨🎬🎤🎧🎼🎹🥁🪘🎷🎺🪗🎸🪕🎻🪈🎲♟️🎯🎳🎮🎰🧩') },
+        { key:'travel', icon:'🚗', label:'Viagem', emojis:emojiGraphemes('🚗🚕🚙🚌🚎🏎️🚓🚑🚒🚐🛻🚚🚛🚜🏍️🛵🚲🛴🛹🛼🚨🚔🚍🚘🚖🛞🚡🚠🚟🚃🚋🚞🚝🚄🚅🚈🚂🚆🚇🚊🚉✈️🛫🛬🛩️💺🛰️🚀🛸🚁🛶⛵🚤🛥️🛳️⛴️🚢⚓🛟⛽🚧🚦🚥🗺️🗿🗽🗼🏰🏯🏟️🎡🎢🎠⛲⛱️🏖️🏝️🏜️🌋⛰️🏔️🗻🏕️⛺🛖🏠🏡🏢🏥🏦🏨🏪🏫🏩💒🏛️⛪🕌🕍🛕🕋⛩️🛤️🛣️🌅🌄🌠🎇🎆🌇🌆🏙️🌃🌌🌉🌁') },
+        { key:'objects', icon:'💡', label:'Objetos', emojis:emojiGraphemes('⌚📱📲💻⌨️🖥️🖨️🖱️🖲️🕹️🗜️💽💾💿📀📼📷📸📹🎥📽️🎞️📞☎️📟📠📺📻🎙️🎚️🎛️🧭⏱️⏲️⏰🕰️⌛⏳📡🔋🪫🔌💡🔦🕯️🪔🧯🛢️💸💵💴💶💷🪙💰💳🪪💎⚖️🪜🧰🪛🔧🔨⚒️🛠️⛏️🪚🔩⚙️🪤🧱⛓️⛓️‍💥🧲🔫💣🧨🪓🔪🗡️⚔️🛡️🚬⚰️🪦⚱️🏺🔮📿🧿🪬💈⚗️🔭🔬🕳️🩹🩺🩻🩼💊💉🩸🧬🦠🧫🧪🌡️🧹🪠🧺🧻🚽🚿🛁🧼🪥🪒🧽🪣🧴🛎️🔑🗝️🚪🪑🛋️🛏️🛌🧸🪆🖼️🪞🪟🛍️🛒🎁🎈🎏🎀🪄🪅🎊🎉🪩🧧✉️📩📨📧💌📥📤📦🏷️🪧📪📫📬📭📮📯📜📃📄📑🧾📊📈📉🗒️🗓️📆📅🗑️📇🗃️🗳️🗄️📋📁📂🗂️🗞️📰📓📔📒📕📗📘📙📚📖🔖🧷🔗📎🖇️📐📏🧮📌📍✂️🖊️🖋️✒️🖌️🖍️📝✏️🔍🔎🔏🔐🔒🔓') },
+        { key:'symbols', icon:'❤️', label:'Símbolos', emojis:emojiGraphemes('❤️🩷🧡💛💚💙🩵💜🤎🖤🩶🤍💔❤️‍🔥❤️‍🩹❣️💕💞💓💗💖💘💝💟☮️✝️☪️🕉️☸️✡️🔯🕎☯️☦️🛐⛎♈♉♊♋♌♍♎♏♐♑♒♓🆔⚛️🉑☢️☣️📴📳🈶🈚🈸🈺🈷️✴️🆚💮🉐㊙️㊗️🈴🈵🈹🈲🅰️🅱️🆎🆑🅾️🆘❌⭕🛑⛔📛🚫💯💢♨️🚷🚯🚳🚱🔞📵🚭❗❕❓❔‼️⁉️🔅🔆〽️⚠️🚸🔱⚜️🔰♻️✅🈯💹❇️✳️❎🌐💠Ⓜ️🌀💤🏧🚾♿🅿️🛗🈳🈂️🛂🛃🛄🛅🚹🚺🚼⚧️🚻🚮🎦📶🈁🔣ℹ️🔤🔡🔠🆖🆗🆙🆒🆕🆓0️⃣1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣7️⃣8️⃣9️⃣🔟🔢#️⃣*️⃣⏏️▶️⏸️⏯️⏹️⏺️⏭️⏮️⏩⏪⏫⏬◀️🔼🔽➡️⬅️⬆️⬇️↗️↘️↙️↖️↕️↔️↪️↩️⤴️⤵️🔀🔁🔂🔄🔃🎵🎶➕➖➗✖️🟰♾️💲™️©️®️〰️➰➿✔️☑️🔘🔴🟠🟡🟢🔵🟣🟤⚫⚪🟥🟧🟨🟩🟦🟪🟫⬛⬜◼️◻️◾◽▪️▫️🔶🔷🔸🔹🔺🔻💠🔳🔲') },
+        { key:'flags', icon:'🏳️', label:'Bandeiras', emojis:['🏳️','🏴','🏁','🚩','🏳️‍🌈','🏳️‍⚧️','🏴‍☠️','🇧🇷','🇦🇷','🇺🇾','🇵🇾','🇨🇱','🇵🇪','🇨🇴','🇻🇪','🇧🇴','🇪🇨','🇺🇸','🇨🇦','🇲🇽','🇵🇹','🇪🇸','🇫🇷','🇮🇹','🇩🇪','🇬🇧','🇮🇪','🇳🇱','🇧🇪','🇨🇭','🇦🇹','🇬🇷','🇵🇱','🇺🇦','🇷🇺','🇨🇳','🇯🇵','🇰🇷','🇮🇳','🇦🇺','🇳🇿','🇿🇦','🇪🇬','🇮🇱','🇸🇦','🇦🇪','🇹🇷'] }
+    ];
+    let activeEmojiCategory = 'recent';
+    let recentEmojis = JSON.parse(localStorage.getItem('getchat_recent_emojis') || '[]');
+
     const NUDGE_COOLDOWN_MS = 30000;
     const MESSAGE_PAGE_SIZE = 40;
     let nudgeCooldownUntil = 0;
@@ -3146,8 +3223,8 @@
     function updateUnreadBadgesUI() {
         const totalUnread = Array.from(unreadCounts.values()).reduce((sum, value) => sum + Number(value || 0), 0);
         document.title = totalUnread > 0
-            ? `(${totalUnread}) GetChat — Project Echo Build 00025`
-            : 'GetChat — Project Echo Build 00025';
+            ? `(${totalUnread}) GetChat — Project Echo Build 00026`
+            : 'GetChat — Project Echo Build 00026';
         const badge = document.getElementById('unread-main-group');
         if (!currentUserCanAccessGeneral) {
             badge.classList.add('hidden');
@@ -3185,10 +3262,10 @@
     function showTypingIndicator(username) {
         const indicator = document.getElementById('typing-indicator');
         document.getElementById('typing-username').innerText = username;
-        indicator.classList.remove('hidden');
+        indicator.classList.remove('hidden'); indicator.classList.add('flex');
 
         if (typingTimeout) clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => indicator.classList.add('hidden'), 2500);
+        typingTimeout = setTimeout(() => { indicator.classList.add('hidden'); indicator.classList.remove('flex'); }, 2500);
     }
 
     // =======================================================
@@ -3376,6 +3453,19 @@
         el.innerHTML = `<span class="material-symbols-outlined" style="font-size:12px">${read ? 'done_all' : 'done'}</span>`;
     }
 
+    function isSingleEmojiMessage(text) {
+        const value = (text || '').trim();
+        if (!value || value.startsWith('[')) return false;
+        try {
+            const segments = typeof Intl !== 'undefined' && Intl.Segmenter
+                ? [...new Intl.Segmenter(undefined, {granularity:'grapheme'}).segment(value)].map(x=>x.segment)
+                : [value];
+            return segments.length === 1 && /\p{Extended_Pictographic}/u.test(segments[0]);
+        } catch (_) {
+            return false;
+        }
+    }
+
     function renderMessage(msg, isRealtime = false, options = {}) {
         const { prepend = false, suppressScroll = false } = options;
         if (msg?.id && renderedMessageIds.has(msg.id)) return;
@@ -3429,7 +3519,7 @@
                 <div class="echo-message-actions relative ${isMe ? 'items-end' : 'items-start'} flex flex-col">
                     <div class="${isMe ? 'message-bubble-outgoing rounded-2xl rounded-tr-none' : 'message-bubble-incoming rounded-2xl rounded-tl-none'} echo-message-bubble px-3.5 py-2 text-sm text-on-surface relative group" data-message-id="${msg.id}">
                         <div id="echo-reply-preview-${msg.id}" class="hidden echo-reply-preview rounded-lg px-2.5 py-1.5 mb-2 text-[11px]"></div>
-                        <div class="pr-12 pb-1 echo-message-content">${formatMessageContent(msg.texto || '')}</div>
+                        <div class="pr-12 pb-1 echo-message-content ${isSingleEmojiMessage(msg.texto || '') ? 'echo-single-emoji' : ''}">${formatMessageContent(msg.texto || '')}</div>
                         <span class="text-[9px] opacity-60 font-medium absolute bottom-1 right-2.5 select-none flex items-center">
                             ${timeFormatted}
                             ${isMe && msg.grupo === null ? `<span id="echo-read-${msg.id}" class="echo-read-receipt ${msg.visualizada_em ? 'is-read' : ''}" title="${msg.visualizada_em ? 'Visualizada' : 'Enviada'}"><span class="material-symbols-outlined" style="font-size:12px">${msg.visualizada_em ? 'done_all' : 'done'}</span></span>` : ''}
@@ -3503,11 +3593,58 @@
 
     function escapeHtml(str) { return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : ''; }
     function scrollToBottom() { chatContainer.scrollTop = chatContainer.scrollHeight; }
-    function toggleEmojiPopover() { document.getElementById("emoji-popover").classList.toggle("hidden"); }
+    function toggleEmojiPopover(force) {
+        const pop = document.getElementById('emoji-popover');
+        const shouldOpen = typeof force === 'boolean' ? force : pop.classList.contains('hidden');
+        pop.classList.toggle('hidden', !shouldOpen);
+        if (shouldOpen) {
+            renderEmojiCategories();
+            renderEmojiPicker();
+            setTimeout(() => document.getElementById('emoji-search')?.focus({preventScroll:true}), 30);
+        }
+    }
+    function renderEmojiCategories() {
+        const tabs = document.getElementById('emoji-category-tabs');
+        if (!tabs) return;
+        tabs.innerHTML = ECHO_EMOJI_CATEGORIES.map(cat => `<button type="button" class="echo-emoji-category ${activeEmojiCategory===cat.key?'active':''} flex-shrink-0 w-8 h-8 rounded-lg" title="${cat.label}" onclick="selectEmojiCategory('${cat.key}')">${cat.icon}</button>`).join('');
+    }
+    function selectEmojiCategory(key) {
+        activeEmojiCategory = key;
+        document.getElementById('emoji-search').value = '';
+        renderEmojiCategories();
+        renderEmojiPicker();
+    }
+    function getEmojiListForCategory(cat) {
+        return cat.key === 'recent' ? recentEmojis : cat.emojis;
+    }
+    function renderEmojiPicker(filter='') {
+        const box = document.getElementById('echo-emoji-popover');
+        if (!box) return;
+        const term = (filter || '').trim();
+        let emojis;
+        if (term) {
+            emojis = ECHO_EMOJI_CATEGORIES.filter(c=>c.key!=='recent').flatMap(c=>c.emojis);
+        } else {
+            const cat = ECHO_EMOJI_CATEGORIES.find(c=>c.key===activeEmojiCategory) || ECHO_EMOJI_CATEGORIES[1];
+            emojis = getEmojiListForCategory(cat);
+        }
+        // Busca textual simples: permite colar/digitar o próprio emoji no campo de busca.
+        if (term && /\p{Extended_Pictographic}/u.test(term)) emojis = emojis.filter(e=>e.includes(term));
+        emojis = [...new Set(emojis)];
+        box.innerHTML = emojis.length
+            ? emojis.map(e=>`<button type="button" onclick="insertEmoji('${e.replace(/'/g,"\\'")}')" class="echo-emoji-btn" title="${e}">${e}</button>`).join('')
+            : '<div class="col-span-full text-xs text-outline text-center py-6">Nenhum emoji encontrado.</div>';
+    }
+    function filterEmojiPicker(value) { renderEmojiPicker(value); }
     function insertEmoji(emoji) {
-        const input = document.getElementById("message-input");
-        input.value += emoji;
-        document.getElementById("emoji-popover").classList.add("hidden");
+        const input = document.getElementById('message-input');
+        const start = input.selectionStart ?? input.value.length;
+        const end = input.selectionEnd ?? input.value.length;
+        input.value = input.value.slice(0,start) + emoji + input.value.slice(end);
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        recentEmojis = [emoji, ...recentEmojis.filter(e=>e!==emoji)].slice(0,40);
+        localStorage.setItem('getchat_recent_emojis', JSON.stringify(recentEmojis));
+        autoResizeMessageInput();
         input.focus();
     }
 
